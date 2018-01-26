@@ -1,0 +1,7 @@
+csvio module
+============
+
+.. automodule:: csvio
+    :members:
+    :undoc-members:
+    :show-inheritance:

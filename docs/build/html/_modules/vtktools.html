@@ -1,0 +1,282 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>vtktools &mdash; renal_postproc 0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="renal_postproc 0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">renal_postproc 0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for vtktools</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">vtk</span>
+<span class="kn">import</span> <span class="nn">vtk.numpy_interface</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">vtk.numpy_interface</span> <span class="kn">import</span> <span class="n">dataset_adapter</span> <span class="k">as</span> <span class="n">dsa</span>
+
+<div class="viewcode-block" id="PolyLineIterator"><a class="viewcode-back" href="../vtktools.html#vtktools.PolyLineIterator">[docs]</a><span class="k">class</span> <span class="nc">PolyLineIterator</span><span class="p">:</span>
+	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell</span><span class="p">):</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">cell</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkPolyLine&#39;</span><span class="p">):</span>
+			<span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;Unable to create the cell iterator, only vtkPolyLines supported as cell type&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">cell</span><span class="o">.</span><span class="n">GetNumberOfPoints</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">pl</span> <span class="o">=</span> <span class="n">cell</span>
+
+	<span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span>
+
+<div class="viewcode-block" id="PolyLineIterator.next"><a class="viewcode-back" href="../vtktools.html#vtktools.PolyLineIterator.next">[docs]</a>	<span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+			<span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pl</span><span class="o">.</span><span class="n">GetPointId</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">StopIteration</span><span class="p">()</span>
+</div></div>
+<div class="viewcode-block" id="CellIterator"><a class="viewcode-back" href="../vtktools.html#vtktools.CellIterator">[docs]</a><span class="k">class</span> <span class="nc">CellIterator</span><span class="p">:</span>
+	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataSet</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">GetNumberOfCells</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="o">=</span> <span class="n">dataSet</span>
+
+	<span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span>
+	
+<div class="viewcode-block" id="CellIterator.next"><a class="viewcode-back" href="../vtktools.html#vtktools.CellIterator.next">[docs]</a>	<span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+			<span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="o">.</span><span class="n">GetCell</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">StopIteration</span><span class="p">()</span>
+</div></div>
+<span class="k">def</span> <span class="nf">_createMapper</span><span class="p">(</span><span class="n">dataSet</span><span class="p">):</span>
+	<span class="k">if</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkPolyData&#39;</span><span class="p">):</span>
+		<span class="n">mapper</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPolyDataMapper</span><span class="p">()</span>
+	<span class="k">elif</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkUnstructuredGrid&#39;</span><span class="p">):</span>
+		<span class="n">mapper</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkDataSetMapper</span><span class="p">()</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Unsupported dataset type&#39;</span><span class="p">)</span>
+	<span class="n">mapper</span><span class="o">.</span><span class="n">SetInputData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">mapper</span>
+
+<div class="viewcode-block" id="renderData"><a class="viewcode-back" href="../vtktools.html#vtktools.renderData">[docs]</a><span class="k">def</span> <span class="nf">renderData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="n">colorBy</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;colorBy&#39;</span><span class="p">,</span> <span class="s">&#39;constant&#39;</span><span class="p">)</span>
+
+	<span class="n">mapper</span> <span class="o">=</span> <span class="n">_createMapper</span><span class="p">(</span><span class="n">dataSet</span><span class="p">)</span>
+
+	<span class="n">actor</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkActor</span><span class="p">()</span>
+	<span class="n">actor</span><span class="o">.</span><span class="n">SetMapper</span><span class="p">(</span><span class="n">mapper</span><span class="p">)</span>
+
+	<span class="n">renderer</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkRenderer</span><span class="p">()</span>
+	<span class="n">renderer</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+	<span class="n">renderer</span><span class="o">.</span><span class="n">AddActor</span><span class="p">(</span><span class="n">actor</span><span class="p">)</span>
+
+	<span class="c"># Coloring</span>
+	<span class="k">if</span> <span class="n">colorBy</span> <span class="o">==</span> <span class="s">&#39;constant&#39;</span><span class="p">:</span>
+		<span class="n">color</span> <span class="o">=</span> <span class="n">kwarg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+		<span class="n">mapper</span><span class="o">.</span><span class="n">ScalarVisibilityOff</span><span class="p">()</span>
+		<span class="n">actor</span><span class="o">.</span><span class="n">GetProperty</span><span class="p">()</span><span class="o">.</span><span class="n">SetColor</span><span class="p">(</span><span class="n">color</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+	<span class="k">elif</span> <span class="n">colorBy</span> <span class="o">==</span> <span class="s">&#39;scalar&#39;</span><span class="p">:</span>
+		<span class="c"># Create lookup table</span>
+		<span class="n">lut</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkLookupTable</span><span class="p">()</span>
+		<span class="n">lut</span><span class="o">.</span><span class="n">SetTableRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+		<span class="n">lut</span><span class="o">.</span><span class="n">SetHueRange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+		<span class="n">lut</span><span class="o">.</span><span class="n">SetSaturationRange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+		<span class="n">lut</span><span class="o">.</span><span class="n">SetValueRange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+		<span class="n">lut</span><span class="o">.</span><span class="n">Build</span><span class="p">()</span>
+
+		<span class="c"># Create colorbar</span>
+		<span class="n">colorbar</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkScalarBarActor</span><span class="p">()</span>
+		<span class="n">colorbar</span><span class="o">.</span><span class="n">SetLookupTable</span><span class="p">(</span><span class="n">lut</span><span class="p">)</span>
+		<span class="n">colorbar</span><span class="o">.</span><span class="n">SetTitle</span><span class="p">(</span><span class="s">&#39;aaa&#39;</span><span class="p">)</span>
+		<span class="n">colorbar</span><span class="o">.</span><span class="n">SetNumberOfLabels</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+		<span class="n">renderer</span><span class="o">.</span><span class="n">AddActor2D</span><span class="p">(</span><span class="n">colorbar</span><span class="p">)</span>
+
+		<span class="c"># Add colormap to the actor</span>
+		<span class="n">mapper</span><span class="o">.</span><span class="n">ScalarVisibilityOn</span><span class="p">()</span>		
+		<span class="n">mapper</span><span class="o">.</span><span class="n">SetLookupTable</span><span class="p">(</span><span class="n">lut</span><span class="p">)</span>
+	
+
+	<span class="c"># Setup camera</span>
+	<span class="sd">&#39;&#39;&#39;bounds = polyData.GetBounds()</span>
+<span class="sd">	cx = (bounds[0] + bounds[1]) / 2.0</span>
+<span class="sd">	cy = (bounds[2] + bounds[3]) / 2.0</span>
+<span class="sd">	scale = max(math.fabs(bounds[0] - cx), math.fabs(bounds[1] - cx), math.fabs(bounds[2] - cy), math.fabs(bounds[3] - cy))</span>
+<span class="sd">	camera = renderer.GetActiveCamera()</span>
+<span class="sd">	camera.ParallelProjectionOn()</span>
+<span class="sd">	camera.SetParallelScale(scale)</span>
+<span class="sd">	camera.SetPosition(cx, cy, 1)</span>
+<span class="sd">	camera.SetFocalPoint(cx, cy, 0)&#39;&#39;&#39;</span>
+
+	<span class="n">renderWindow</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkRenderWindow</span><span class="p">()</span>
+	<span class="n">renderWindow</span><span class="o">.</span><span class="n">SetSize</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">)</span>
+	<span class="n">renderWindow</span><span class="o">.</span><span class="n">AddRenderer</span><span class="p">(</span><span class="n">renderer</span><span class="p">)</span>
+	<span class="c">#renderWindow.Render()</span>
+
+	<span class="n">interactor</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkRenderWindowInteractor</span><span class="p">()</span>
+	<span class="n">interactor</span><span class="o">.</span><span class="n">SetRenderWindow</span><span class="p">(</span><span class="n">renderWindow</span><span class="p">)</span>
+	<span class="n">interactor</span><span class="o">.</span><span class="n">Initialize</span><span class="p">()</span>
+	<span class="c">#interactor.Render()</span>
+	<span class="n">interactor</span><span class="o">.</span><span class="n">Start</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="cutPolySurface"><a class="viewcode-back" href="../vtktools.html#vtktools.cutPolySurface">[docs]</a><span class="k">def</span> <span class="nf">cutPolySurface</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">normal</span><span class="p">):</span>
+	<span class="c"># Generate surface cutcurve</span>
+	<span class="n">plane</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPlane</span><span class="p">()</span>
+	<span class="n">plane</span><span class="o">.</span><span class="n">SetOrigin</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">point</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+	<span class="n">plane</span><span class="o">.</span><span class="n">SetNormal</span><span class="p">(</span><span class="n">normal</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">normal</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">normal</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+	
+	<span class="n">cutter</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkCutter</span><span class="p">()</span>
+	<span class="n">cutter</span><span class="o">.</span><span class="n">SetInputData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">)</span>
+	<span class="n">cutter</span><span class="o">.</span><span class="n">SetCutFunction</span><span class="p">(</span><span class="n">plane</span><span class="p">)</span>
+	<span class="n">cutter</span><span class="o">.</span><span class="n">Update</span><span class="p">()</span>
+
+	<span class="c"># Get cut line edges</span>
+	<span class="n">cutData</span> <span class="o">=</span> <span class="n">cutter</span><span class="o">.</span><span class="n">GetOutput</span><span class="p">()</span>
+	<span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">cutLines</span> <span class="o">=</span> <span class="n">cutData</span><span class="o">.</span><span class="n">GetLines</span><span class="p">()</span>
+	<span class="n">cutLines</span><span class="o">.</span><span class="n">InitTraversal</span><span class="p">()</span>
+	<span class="n">idList</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkIdList</span><span class="p">()</span>
+	<span class="k">while</span> <span class="n">cutLines</span><span class="o">.</span><span class="n">GetNextCell</span><span class="p">(</span><span class="n">idList</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+		<span class="n">edges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">idList</span><span class="o">.</span><span class="n">GetId</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">idList</span><span class="o">.</span><span class="n">GetId</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>	
+
+	<span class="c"># Gather all points by traversing the edge graph starting</span>
+	<span class="c"># from the point closest to the centerline point</span>
+	<span class="n">locator</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPointLocator</span><span class="p">()</span>
+	<span class="n">locator</span><span class="o">.</span><span class="n">SetDataSet</span><span class="p">(</span><span class="n">cutData</span><span class="p">)</span>
+	<span class="n">locator</span><span class="o">.</span><span class="n">BuildLocator</span><span class="p">()</span>
+	<span class="n">startPtId</span> <span class="o">=</span> <span class="n">locator</span><span class="o">.</span><span class="n">FindClosestPoint</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+
+	<span class="n">pointIds</span> <span class="o">=</span> <span class="p">[</span><span class="n">startPtId</span><span class="p">]</span>
+	<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+		<span class="c"># Find the edge that starts at the latest point </span>
+		<span class="n">pred</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">edges</span> <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">pointIds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+		<span class="n">currentPtId</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+
+		<span class="c"># Check if we&#39;ve returned to the start point</span>
+		<span class="k">if</span> <span class="n">currentPtId</span> <span class="o">==</span> <span class="n">startPtId</span><span class="p">:</span>
+			<span class="k">break</span>
+
+		<span class="n">pointIds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">currentPtId</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>	<span class="c"># if no break occured</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The cut curve does not form a closed loop&#39;</span><span class="p">)</span>
+	<span class="n">cutCurve</span> <span class="o">=</span> <span class="n">dsa</span><span class="o">.</span><span class="n">WrapDataObject</span><span class="p">(</span><span class="n">cutData</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">cutCurve</span><span class="o">.</span><span class="n">Points</span><span class="p">[</span><span class="n">pointIds</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="cutPolyData"><a class="viewcode-back" href="../vtktools.html#vtktools.cutPolyData">[docs]</a><span class="k">def</span> <span class="nf">cutPolyData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="c"># Read options</span>
+	<span class="n">pt</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;point&#39;</span><span class="p">)</span>
+	<span class="n">normal</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;normal&#39;</span><span class="p">)</span>
+	<span class="n">delta</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;maxDist&#39;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">pt</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;No point provided&#39;</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">normal</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;No normal provided&#39;</span><span class="p">)</span>
+
+	<span class="c"># Create plane</span>
+	<span class="n">plane</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPlane</span><span class="p">()</span>
+	<span class="n">plane</span><span class="o">.</span><span class="n">SetOrigin</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pt</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+	<span class="n">plane</span><span class="o">.</span><span class="n">SetNormal</span><span class="p">(</span><span class="n">normal</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">normal</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">normal</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+	<span class="n">cutter</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkCutter</span><span class="p">()</span>
+	<span class="n">cutter</span><span class="o">.</span><span class="n">SetCutFunction</span><span class="p">(</span><span class="n">plane</span><span class="p">)</span>
+	<span class="n">cutter</span><span class="o">.</span><span class="n">SetInputData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">delta</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">cutter</span><span class="o">.</span><span class="n">Update</span><span class="p">()</span>
+		<span class="k">return</span> <span class="n">cutter</span><span class="o">.</span><span class="n">GetOutput</span><span class="p">()</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="c"># Create a box</span>
+		<span class="n">box</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkBox</span><span class="p">()</span>
+		<span class="n">box</span><span class="o">.</span><span class="n">SetBounds</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">delta</span><span class="p">,</span> <span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">delta</span><span class="p">,</span> <span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">delta</span><span class="p">,</span> <span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">delta</span><span class="p">,</span> <span class="n">pt</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="n">delta</span><span class="p">,</span> <span class="n">pt</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="n">delta</span><span class="p">)</span>
+	
+		<span class="c"># Clip data with a box</span>
+		<span class="n">clipper</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkClipDataSet</span><span class="p">()</span>
+		<span class="n">clipper</span><span class="o">.</span><span class="n">SetClipFunction</span><span class="p">(</span><span class="n">box</span><span class="p">)</span>
+		<span class="n">clipper</span><span class="o">.</span><span class="n">SetInputConnection</span><span class="p">(</span><span class="n">cutter</span><span class="o">.</span><span class="n">GetOutputPort</span><span class="p">())</span>
+		<span class="n">clipper</span><span class="o">.</span><span class="n">InsideOutOn</span><span class="p">()</span>
+		<span class="n">clipper</span><span class="o">.</span><span class="n">Update</span><span class="p">()</span>
+		<span class="k">return</span> <span class="n">clipper</span><span class="o">.</span><span class="n">GetOutput</span><span class="p">()</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">renal_postproc 0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, Niclas Berg.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

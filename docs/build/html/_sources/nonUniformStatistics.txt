@@ -1,0 +1,7 @@
+nonUniformStatistics module
+===========================
+
+.. automodule:: nonUniformStatistics
+    :members:
+    :undoc-members:
+    :show-inheritance:

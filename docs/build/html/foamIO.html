@@ -1,0 +1,395 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>foamIO module &mdash; renal_postproc 0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="renal_postproc 0 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">renal_postproc 0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-foamIO">
+<span id="foamio-module"></span><h1>foamIO module<a class="headerlink" href="#module-foamIO" title="Permalink to this headline">¶</a></h1>
+<p>Provides a wrapper for the OpenFOAM-reader in VTK, giving
+a more intuitive interface to iterate over the timeseries. 
+A helper function for writing OpenFOAM-data is also provided.</p>
+<dl class="class">
+<dt id="foamIO.OpenFOAMReader">
+<em class="property">class </em><tt class="descclassname">foamIO.</tt><tt class="descname">OpenFOAMReader</tt><big>(</big><em>fileName</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience wrapper around vtkOpenFOAMReader.
+Allows all reader options to be set in the constructor,
+and simplifies iteration over a timeseries.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">fileName (str):</th><td class="field-body">.foam-file to read (should be placed in the root folder of the case)</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Keyword args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">cellArrays = [str]:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">List of cell data array names to read</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">pointArrays = [str]:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">List of point data array names to read</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">lagrangianArrays = [str]:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">List of lagrangian array names to read</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">patchArrays = [str]:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">List of region names to read from</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">decomposePolyhedra = (True|False):</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Decompose polyhedral mesh elements to tetras and wedges</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">cellToPoint = (True|False):</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Convert cell data to point data</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">cacheMesh = (True|False):</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Cache or re-read the mesh at each timestep</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Returns:</dt>
+<dd>OpenFOAMReader</dd>
+</dl>
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.currentIteration">
+<tt class="descname">currentIteration</tt><big>(</big><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.currentIteration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current timestep index of the reader</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>int: Current timestep</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.currentTime">
+<tt class="descname">currentTime</tt><big>(</big><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.currentTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current time (in seconds) of the reader</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>float: Current time</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.finishedReading">
+<tt class="descname">finishedReading</tt><big>(</big><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.finishedReading" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the reader has reached the last timestep, can be used in combination with
+readNext() to iterate over the dataset:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">reader</span> <span class="o">=</span> <span class="n">OpenFOAMReader</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">startReading</span><span class="p">()</span>
+<span class="k">while</span> <span class="ow">not</span> <span class="n">reader</span><span class="o">.</span><span class="n">finishedReader</span><span class="p">():</span>
+        <span class="c"># do stuff</span>
+        <span class="n">reader</span><span class="o">.</span><span class="n">readNext</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>bool: True if end has been reached, otherwise False</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.getDataSet">
+<tt class="descname">getDataSet</tt><big>(</big><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.getDataSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the dataset at the current timestep</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>vtkMultiBlockDataSet</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.getPatchNames">
+<tt class="descname">getPatchNames</tt><big>(</big><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.getPatchNames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a list of names of all regions/patches in the dataset</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>[regionName1, regionName2, ...]</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.readIteration">
+<tt class="descname">readIteration</tt><big>(</big><em>iteration</em><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.readIteration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the timestep of the reader, and read the data.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">iteration (int):</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Timestep number to read</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Returns:</dt>
+<dd>Nothing</dd>
+<dt>Raises:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">ValueError:</th><td class="field-body">If the iteration number is out of range</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.readNext">
+<tt class="descname">readNext</tt><big>(</big><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.readNext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the next timestep of the dataset, can be used in combination with finishedReading to iterate
+over the dataset:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">reader</span> <span class="o">=</span> <span class="n">OpenFOAMReader</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">startReading</span><span class="p">()</span>
+<span class="k">while</span> <span class="ow">not</span> <span class="n">reader</span><span class="o">.</span><span class="n">finishedReader</span><span class="p">():</span>
+        <span class="c"># do stuff</span>
+        <span class="n">reader</span><span class="o">.</span><span class="n">readNext</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>Nothing</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.readTime">
+<tt class="descname">readTime</tt><big>(</big><em>t</em><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.readTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the time (in seconds) of the reader, and read the data.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">t (float):</th><td class="field-body">Time to read</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Returns:</dt>
+<dd>Nothing</dd>
+<dt>Raises:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">ValueError:</th><td class="field-body">If the time value was not found in the dataset</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.skipAndRead">
+<tt class="descname">skipAndRead</tt><big>(</big><em>n</em><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.skipAndRead" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the data at n timesteps from the current timestep. Can be used to iterate over the
+dataset:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">reader</span> <span class="o">=</span> <span class="n">OpenFOAMReader</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">startReading</span><span class="p">()</span>
+<span class="k">while</span> <span class="ow">not</span> <span class="n">reader</span><span class="o">.</span><span class="n">finishedReader</span><span class="p">():</span>
+        <span class="c"># do stuff</span>
+        <span class="n">reader</span><span class="o">.</span><span class="n">skipAndRead</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="c"># Skip 9 timesteps</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Params:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">n (int):</th><td class="field-body">Number of timesteps to move forward in time</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Raises:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">ValueError:</th><td class="field-body">If attempting to read of out range</td>
+</tr>
+<tr class="field-even field"><th class="field-name">RuntimeError:</th><td class="field-body">If no data has yet been read (no prior call has been made to startReading, readIteration or readTime)</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Returns:</dt>
+<dd>Nothing</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="foamIO.OpenFOAMReader.startReading">
+<tt class="descname">startReading</tt><big>(</big><big>)</big><a class="headerlink" href="#foamIO.OpenFOAMReader.startReading" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the first timestep of the dataset</p>
+<dl class="docutils">
+<dt>Raises:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">ValueError:</th><td class="field-body">If no data is found in the dataset</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Returns:</dt>
+<dd>Nothing</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="foamIO.writeFoamData">
+<tt class="descclassname">foamIO.</tt><tt class="descname">writeFoamData</tt><big>(</big><em>caseFolder</em>, <em>fieldName</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#foamIO.writeFoamData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write numpy-arrays to OpenFOAM-files.
+Args:</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">caseFolder (str):</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">root folder of the OF case to write to</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">fieldName (str):</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">name of the field to write</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<dl class="docutils">
+<dt>Keyword args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">internalField = np.array:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Internal field data to write</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">boundaryField = {&#8216;boundaryName1&#8217;: np.array, &#8216;boundaryName2&#8217;: np.array, ...}:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Dictionary of boundary name-numpy data arrays of data to write</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">dimension (DataDimension):</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Physical dimension (e.g. length/time) of the data to write</td>
+</tr>
+<tr class="field-even field"><th class="field-name">time (float):</th><td class="field-body">Time value at which the data should be written (e.g. if t=0.1, the data will be written to caseFolder/0.1/)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">fieldType (str):</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Type of the data to write (one of volScalarField / volVectorField / volSymmTensorField / volTensorField). If not provided,
+the function will make an attempt at deducing the type.</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Returns: </dt>
+<dd>Nothing</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/foamIO.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">renal_postproc 0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, Niclas Berg.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

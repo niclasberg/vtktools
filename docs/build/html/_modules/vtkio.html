@@ -1,0 +1,290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>vtkio &mdash; renal_postproc 0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="renal_postproc 0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">renal_postproc 0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for vtkio</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">vtk</span>
+<span class="kn">import</span> <span class="nn">vtk.numpy_interface</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">vtk.numpy_interface</span> <span class="kn">import</span> <span class="n">dataset_adapter</span> <span class="k">as</span> <span class="n">dsa</span>
+
+<span class="k">def</span> <span class="nf">_verifyPolyData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">):</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkPolyData&#39;</span><span class="p">):</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The dataset is not a vtkPolyData&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_verifyUnstructuredGrid</span><span class="p">(</span><span class="n">dataSet</span><span class="p">):</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkUnstructuredGrid&#39;</span><span class="p">):</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The dataset is not a vtkUnstructuredGrid&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="writeDataSet"><a class="viewcode-back" href="../vtkio.html#vtkio.writeDataSet">[docs]</a><span class="k">def</span> <span class="nf">writeDataSet</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="n">fileName</span><span class="p">):</span>
+	<span class="n">filePrefix</span><span class="p">,</span> <span class="n">fileExtension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.vtp&#39;</span><span class="p">:</span>
+		<span class="n">_verifyPolyData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">)</span>
+		<span class="n">writer</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkXMLPolyDataWriter</span><span class="p">()</span>
+	<span class="k">elif</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.vtu&#39;</span><span class="p">:</span>
+		<span class="n">_verifyUnstructuredGrid</span><span class="p">(</span><span class="n">dataSet</span><span class="p">)</span>
+		<span class="n">writer</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkXMLUnstructuredGridWriter</span><span class="p">()</span>
+	<span class="k">elif</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.vtk&#39;</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkUnstructuredGrid&#39;</span><span class="p">):</span>
+			<span class="n">writer</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkUnstructuredGridWriter</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkPolyData&#39;</span><span class="p">):</span>
+			<span class="n">writer</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPolyDataWriter</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkImageData&#39;</span><span class="p">):</span>
+			<span class="n">writer</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkImageDataWriter</span><span class="p">()</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Incompatible data type &#39;</span> <span class="o">+</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">GetClassName</span><span class="p">()</span> <span class="o">+</span> <span class="s">&#39; to format .vtk&#39;</span><span class="p">)</span>
+		<span class="n">writer</span><span class="o">.</span><span class="n">SetFileTypeToBinary</span><span class="p">()</span>
+	<span class="k">elif</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.stl&#39;</span><span class="p">:</span>
+		<span class="n">_verifyPolyData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">)</span>
+		<span class="n">writer</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkSTLWriter</span><span class="p">()</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Unknown file extension&#39;</span><span class="p">,</span> <span class="n">fileExtension</span><span class="p">)</span>
+	<span class="n">writer</span><span class="o">.</span><span class="n">SetInputData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">)</span>
+	<span class="n">writer</span><span class="o">.</span><span class="n">SetFileName</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>
+	<span class="n">writer</span><span class="o">.</span><span class="n">Write</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="readDataSet"><a class="viewcode-back" href="../vtkio.html#vtkio.readDataSet">[docs]</a><span class="k">def</span> <span class="nf">readDataSet</span><span class="p">(</span><span class="n">fileName</span><span class="p">):</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fileName</span><span class="p">):</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The file&#39;</span><span class="p">,</span> <span class="n">fileName</span><span class="p">,</span> <span class="s">&#39;did not exist&#39;</span><span class="p">)</span>
+
+	<span class="n">filePrefix</span><span class="p">,</span> <span class="n">fileExtension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.vtp&#39;</span><span class="p">:</span>
+		<span class="n">reader</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkXMLPolyDataReader</span><span class="p">()</span>
+	<span class="k">elif</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.vtu&#39;</span><span class="p">:</span>
+		<span class="n">reader</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkXMLUnstructuredGridReader</span><span class="p">()</span>
+	<span class="k">elif</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.vti&#39;</span><span class="p">:</span>
+		<span class="n">reader</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkXMLImageDataReader</span><span class="p">()</span>
+	<span class="k">elif</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.stl&#39;</span><span class="p">:</span>
+		<span class="n">reader</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkSTLReader</span><span class="p">()</span>
+	<span class="k">elif</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.case&#39;</span><span class="p">:</span>
+		<span class="n">reader</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkEnSightGoldBinaryReader</span><span class="p">()</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Unknown file extension&#39;</span><span class="p">,</span> <span class="n">fileExtension</span><span class="p">)</span>
+	
+	<span class="k">if</span> <span class="n">fileExtension</span> <span class="o">==</span> <span class="s">&#39;.case&#39;</span><span class="p">:</span>
+		<span class="n">reader</span><span class="o">.</span><span class="n">SetCaseFileName</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>		
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">reader</span><span class="o">.</span><span class="n">SetFileName</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>
+	
+	<span class="n">reader</span><span class="o">.</span><span class="n">Update</span><span class="p">()</span>
+	<span class="k">return</span> <span class="n">reader</span><span class="o">.</span><span class="n">GetOutput</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="createPolyData"><a class="viewcode-back" href="../vtkio.html#vtkio.createPolyData">[docs]</a><span class="k">def</span> <span class="nf">createPolyData</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+	<span class="n">pd</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPolyData</span><span class="p">()</span>
+	<span class="n">pts</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPoints</span><span class="p">()</span>
+	<span class="n">pts</span><span class="o">.</span><span class="n">SetNumberOfPoints</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">))</span>
+	<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+		<span class="n">pts</span><span class="o">.</span><span class="n">SetPoint</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pt</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+	<span class="n">pd</span><span class="o">.</span><span class="n">SetPoints</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">pd</span>
+</div>
+<div class="viewcode-block" id="addPolyLineToDataSet"><a class="viewcode-back" href="../vtkio.html#vtkio.addPolyLineToDataSet">[docs]</a><span class="k">def</span> <span class="nf">addPolyLineToDataSet</span><span class="p">(</span><span class="n">polyData</span><span class="p">,</span> <span class="n">points</span><span class="p">):</span>
+	<span class="n">origNumPts</span> <span class="o">=</span> <span class="n">polyData</span><span class="o">.</span><span class="n">GetNumberOfPoints</span><span class="p">()</span>
+
+	<span class="c"># Verify that the polyDataSet has a point array</span>
+	<span class="k">if</span> <span class="n">origNumPts</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+		<span class="n">polyData</span><span class="o">.</span><span class="n">SetPoints</span><span class="p">(</span><span class="n">vtk</span><span class="o">.</span><span class="n">vtkPoints</span><span class="p">())</span>
+		<span class="n">polyData</span><span class="o">.</span><span class="n">SetLines</span><span class="p">(</span><span class="n">vtk</span><span class="o">.</span><span class="n">vtkCellArray</span><span class="p">())</span>
+
+	<span class="n">cell</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPolyLine</span><span class="p">()</span>
+	<span class="n">cell</span><span class="o">.</span><span class="n">GetPointIds</span><span class="p">()</span><span class="o">.</span><span class="n">SetNumberOfIds</span><span class="p">(</span><span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pt</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+		<span class="c"># Insert point</span>
+		<span class="n">polyData</span><span class="o">.</span><span class="n">GetPoints</span><span class="p">()</span><span class="o">.</span><span class="n">InsertNextPoint</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pt</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+		<span class="c"># Associate point id to line</span>
+		<span class="n">cell</span><span class="o">.</span><span class="n">GetPointIds</span><span class="p">()</span><span class="o">.</span><span class="n">SetId</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">origNumPts</span><span class="o">+</span><span class="n">i</span><span class="p">)</span>
+	<span class="n">lines</span> <span class="o">=</span> <span class="n">polyData</span><span class="o">.</span><span class="n">GetLines</span><span class="p">()</span><span class="o">.</span><span class="n">InsertNextCell</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>
+</div>
+<span class="k">def</span> <span class="nf">_insertIntoVTKArray</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+	<span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+		<span class="n">array</span><span class="o">.</span><span class="n">InsertNextValue</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+	<span class="k">elif</span> <span class="n">array</span><span class="o">.</span><span class="n">GetNumberOfComponents</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+		<span class="n">array</span><span class="o">.</span><span class="n">InsertNextTuple</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+ 			<span class="n">_insertIntoVTKArray</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_appendData</span><span class="p">(</span><span class="n">dataContainer</span><span class="p">,</span> <span class="n">arrayName</span><span class="p">,</span> <span class="n">valuesToInsert</span><span class="p">):</span>
+	<span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">valuesToInsert</span><span class="p">)</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">dataContainer</span><span class="o">.</span><span class="n">HasArray</span><span class="p">(</span><span class="n">arrayName</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s">&#39;int64&#39;</span><span class="p">:</span>
+			<span class="n">array</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkLongArray</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">values</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s">&#39;int32&#39;</span><span class="p">:</span>
+			<span class="n">array</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkIntArray</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">values</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s">&#39;float64&#39;</span><span class="p">:</span>
+			<span class="n">array</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkDoubleArray</span><span class="p">()</span>
+		<span class="k">elif</span> <span class="n">values</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s">&#39;float32&#39;</span><span class="p">:</span>
+			<span class="n">array</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkFloatArray</span><span class="p">()</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Unsupported data type &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+
+		<span class="n">array</span><span class="o">.</span><span class="n">SetName</span><span class="p">(</span><span class="n">arrayName</span><span class="p">)</span>
+
+		<span class="c"># Determine number of components</span>
+		<span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="n">array</span><span class="o">.</span><span class="n">SetNumberOfComponents</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+		<span class="k">elif</span> <span class="n">values</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+			<span class="n">array</span><span class="o">.</span><span class="n">SetNumberOfComponents</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Invalid value array dimension &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+		<span class="n">dataContainer</span><span class="o">.</span><span class="n">AddArray</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">array</span> <span class="o">=</span> <span class="n">dataContainer</span><span class="o">.</span><span class="n">GetArray</span><span class="p">(</span><span class="n">arrayName</span><span class="p">)</span>
+
+	<span class="n">_insertIntoVTKArray</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+
+<div class="viewcode-block" id="appendCellData"><a class="viewcode-back" href="../vtkio.html#vtkio.appendCellData">[docs]</a><span class="k">def</span> <span class="nf">appendCellData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="n">arrayName</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+	<span class="n">_appendData</span><span class="p">(</span><span class="n">dataSet</span><span class="o">.</span><span class="n">GetCellData</span><span class="p">(),</span> <span class="n">arrayName</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="appendPointData"><a class="viewcode-back" href="../vtkio.html#vtkio.appendPointData">[docs]</a><span class="k">def</span> <span class="nf">appendPointData</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="n">arrayName</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+	<span class="n">_appendData</span><span class="p">(</span><span class="n">dataSet</span><span class="o">.</span><span class="n">GetPointData</span><span class="p">(),</span> <span class="n">arrayName</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="createPolyLine"><a class="viewcode-back" href="../vtkio.html#vtkio.createPolyLine">[docs]</a><span class="k">def</span> <span class="nf">createPolyLine</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+	<span class="n">pd</span> <span class="o">=</span> <span class="n">createPolyData</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+	<span class="c"># Create cells</span>
+	<span class="n">cell</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkPolyLine</span><span class="p">()</span>
+	<span class="n">cell</span><span class="o">.</span><span class="n">GetPointIds</span><span class="p">()</span><span class="o">.</span><span class="n">SetNumberOfIds</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">GetNumberOfPoints</span><span class="p">())</span>
+	
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">GetNumberOfPoints</span><span class="p">()):</span>
+		<span class="n">cell</span><span class="o">.</span><span class="n">GetPointIds</span><span class="p">()</span><span class="o">.</span><span class="n">SetId</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+
+	<span class="n">cells</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkCellArray</span><span class="p">()</span>
+	<span class="n">cells</span><span class="o">.</span><span class="n">InsertNextCell</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>
+	<span class="n">pd</span><span class="o">.</span><span class="n">SetLines</span><span class="p">(</span><span class="n">cells</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">pd</span>
+	
+</div>
+<div class="viewcode-block" id="printBlockNames"><a class="viewcode-back" href="../vtkio.html#vtkio.printBlockNames">[docs]</a><span class="k">def</span> <span class="nf">printBlockNames</span><span class="p">(</span><span class="n">dataSet</span><span class="p">):</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkCompositeDataSet&#39;</span><span class="p">):</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Cannot get a block from a non-composite dataset&#39;</span><span class="p">)</span>
+	<span class="n">_printBlockNames</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+</div>
+<span class="k">def</span> <span class="nf">_printBlockNames</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="n">ident</span><span class="p">):</span>
+	<span class="n">it</span> <span class="o">=</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">NewIterator</span><span class="p">()</span>
+	<span class="k">while</span> <span class="ow">not</span> <span class="n">it</span><span class="o">.</span><span class="n">IsDoneWithTraversal</span><span class="p">():</span>
+		<span class="n">blockName</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">GetCurrentMetaData</span><span class="p">()</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">vtk</span><span class="o">.</span><span class="n">vtkCompositeDataSet</span><span class="o">.</span><span class="n">NAME</span><span class="p">())</span>
+		<span class="n">currentBlock</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">GetCurrentDataObject</span><span class="p">()</span>
+		<span class="k">print</span> <span class="n">ident</span><span class="p">,</span> <span class="n">blockName</span>
+		<span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">GetCurrentDataObject</span><span class="p">()</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkCompositeDataSet&#39;</span><span class="p">):</span>
+			<span class="n">d</span> <span class="o">=</span> <span class="n">_printBlockNames</span><span class="p">(</span><span class="n">currentBlock</span><span class="p">,</span> <span class="n">ident</span><span class="o">+</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">d</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+				<span class="k">return</span> <span class="n">d</span>
+		<span class="n">it</span><span class="o">.</span><span class="n">GoToNextItem</span><span class="p">()</span>
+	
+
+<div class="viewcode-block" id="getBlockByName"><a class="viewcode-back" href="../vtkio.html#vtkio.getBlockByName">[docs]</a><span class="k">def</span> <span class="nf">getBlockByName</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkCompositeDataSet&#39;</span><span class="p">):</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Cannot get a block from a non-composite dataset&#39;</span><span class="p">)</span>
+	<span class="n">d</span> <span class="o">=</span> <span class="n">_getBlockByName</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;No block found in the dataset with the name &#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">)</span>
+	<span class="k">return</span> <span class="n">d</span>
+</div>
+<span class="k">def</span> <span class="nf">_getBlockByName</span><span class="p">(</span><span class="n">dataSet</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+	<span class="n">it</span> <span class="o">=</span> <span class="n">dataSet</span><span class="o">.</span><span class="n">NewIterator</span><span class="p">()</span>
+	<span class="k">while</span> <span class="ow">not</span> <span class="n">it</span><span class="o">.</span><span class="n">IsDoneWithTraversal</span><span class="p">():</span>
+		<span class="n">blockName</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">GetCurrentMetaData</span><span class="p">()</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">vtk</span><span class="o">.</span><span class="n">vtkCompositeDataSet</span><span class="o">.</span><span class="n">NAME</span><span class="p">())</span>
+		<span class="n">currentBlock</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">GetCurrentDataObject</span><span class="p">()</span>
+		<span class="k">if</span> <span class="n">blockName</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">currentBlock</span>
+		<span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">GetCurrentDataObject</span><span class="p">()</span><span class="o">.</span><span class="n">IsA</span><span class="p">(</span><span class="s">&#39;vtkCompositeDataSet&#39;</span><span class="p">):</span>
+			<span class="n">d</span> <span class="o">=</span> <span class="n">_getBlockByName</span><span class="p">(</span><span class="n">currentBlock</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">d</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+				<span class="k">return</span> <span class="n">d</span>
+		<span class="n">it</span><span class="o">.</span><span class="n">GoToNextItem</span><span class="p">()</span>
+	<span class="k">return</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="createFolder"><a class="viewcode-back" href="../vtkio.html#vtkio.createFolder">[docs]</a><span class="k">def</span> <span class="nf">createFolder</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+		<span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">renal_postproc 0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, Niclas Berg.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>foamIO &mdash; renal_postproc 0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="renal_postproc 0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">renal_postproc 0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for foamIO</h1><div class="highlight"><pre>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">Provides a wrapper for the OpenFOAM-reader in VTK, giving</span>
+<span class="sd">a more intuitive interface to iterate over the timeseries. </span>
+<span class="sd">A helper function for writing OpenFOAM-data is also provided.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">vtk</span>
+
+<div class="viewcode-block" id="OpenFOAMReader"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader">[docs]</a><span class="k">class</span> <span class="nc">OpenFOAMReader</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;Convenience wrapper around vtkOpenFOAMReader</span>
+<span class="sd">	Allows all reader options to be set in the constructor,</span>
+<span class="sd">	and simplifies iteration over a timeseries.</span>
+
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">_currentIteration</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+	<span class="n">_isInit</span> <span class="o">=</span> <span class="bp">False</span>
+	<span class="n">_finishedReading</span> <span class="o">=</span> <span class="bp">False</span>
+
+	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Construct an OpenFOAMReader</span>
+<span class="sd">		</span>
+<span class="sd">		fileName -- .foam-file to read (should be placed in the root folder of the case)</span>
+<span class="sd">		cellArrays -- List of cell array names to read from the dataset (if not set, all cell arrays will be read)</span>
+<span class="sd">		</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">vtk</span><span class="o">.</span><span class="n">vtkOpenFOAMReader</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">SetFileName</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">UpdateInformation</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">timeValues</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">GetTimeValues</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">Nt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeValues</span><span class="o">.</span><span class="n">GetNumberOfTuples</span><span class="p">()</span>
+
+		<span class="c"># Default options (read everything)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">DecomposePolyhedraOn</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">CacheMeshOn</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">EnableAllCellArrays</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">EnableAllPointArrays</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">CreateCellToPointOff</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">EnableAllPatchArrays</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">EnableAllLagrangianArrays</span><span class="p">()</span>
+
+		<span class="c"># Read options</span>
+		<span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+			<span class="k">print</span> <span class="n">k</span><span class="p">,</span> <span class="s">&#39; =&gt; &#39;</span><span class="p">,</span> <span class="n">v</span>
+			<span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&#39;cellArrays&#39;</span><span class="p">:</span>		
+				<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">DisableAllCellArrays</span><span class="p">()</span>
+				<span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+					<span class="k">for</span> <span class="n">cellArray</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">SetCellArrayStatus</span><span class="p">(</span><span class="n">cellArray</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+			<span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&#39;patchArrays&#39;</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">DisableAllPatchArrays</span><span class="p">()</span>
+				<span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+					<span class="k">for</span> <span class="n">patchArray</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">SetPatchArrayStatus</span><span class="p">(</span><span class="n">patchArray</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+			<span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&#39;pointArrays&#39;</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">DisableAllPointArrays</span><span class="p">()</span>
+				<span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+					<span class="k">for</span> <span class="n">pointArray</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">SetPointArrayStatus</span><span class="p">(</span><span class="n">pointArray</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+			<span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&#39;lagrangianArrays&#39;</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">DisableAllLagrangianArrays</span><span class="p">()</span>
+				<span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+					<span class="k">for</span> <span class="n">lagrangianArray</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">SetLagrangianArrayStatus</span><span class="p">(</span><span class="n">lagrangianArray</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+			<span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&#39;decomposePolyhedra&#39;</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">DecomposePolyhedraOn</span><span class="p">()</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">DecomposePolyhedraOff</span><span class="p">()</span>
+			<span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&#39;cellToPoint&#39;</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">CreateCellToPointOn</span><span class="p">()</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">CreateCellToPointOff</span><span class="p">()</span>		
+			<span class="k">elif</span> <span class="n">k</span> <span class="o">==</span> <span class="s">&#39;cacheMesh&#39;</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">v</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">CacheMeshOn</span><span class="p">()</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">CacheMeshOff</span><span class="p">()</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Invalid argument &#39;</span> <span class="o">+</span> <span class="n">k</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OpenFOAMReader.getDataSet"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.getDataSet">[docs]</a>	<span class="k">def</span> <span class="nf">getDataSet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isInit</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The reader has not read anything yet!&#39;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">finishedReading</span><span class="p">():</span>
+			<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The reader has no more data to read&#39;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">GetOutput</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.getPatchNames"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.getPatchNames">[docs]</a>	<span class="k">def</span> <span class="nf">getPatchNames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">GetPatchArrayName</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">GetNumberOfPatchArrays</span><span class="p">())]</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.readIteration"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.readIteration">[docs]</a>	<span class="k">def</span> <span class="nf">readIteration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iteration</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">iteration</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nt</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Iteration number out of range&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_currentIteration</span> <span class="o">=</span> <span class="n">iteration</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">SetTimeValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeValues</span><span class="o">.</span><span class="n">GetTuple</span><span class="p">(</span><span class="n">iteration</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">Modified</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">Update</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_isInit</span> <span class="o">=</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.readTime"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.readTime">[docs]</a>	<span class="k">def</span> <span class="nf">readTime</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+		<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Nt</span><span class="p">):</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeValues</span><span class="o">.</span><span class="n">GetTuple</span><span class="p">(</span><span class="n">i</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">t</span><span class="p">:</span>
+				<span class="n">it</span> <span class="o">=</span> <span class="n">i</span>
+				<span class="k">break</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The time &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; did not exist in the dataset&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">readIteration</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.currentTime"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.currentTime">[docs]</a>	<span class="k">def</span> <span class="nf">currentTime</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeValues</span><span class="o">.</span><span class="n">GetTuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_currentIteration</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.currentIteration"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.currentIteration">[docs]</a>	<span class="k">def</span> <span class="nf">currentIteration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_currentIteration</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.finishedReading"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.finishedReading">[docs]</a>	<span class="k">def</span> <span class="nf">finishedReading</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finishedReading</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.startReading"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.startReading">[docs]</a>	<span class="k">def</span> <span class="nf">startReading</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_finishedReading</span> <span class="o">=</span> <span class="bp">False</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">readIteration</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.skipAndRead"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.skipAndRead">[docs]</a>	<span class="k">def</span> <span class="nf">skipAndRead</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isInit</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;The reader has not been intialized, call startReading() before readNext()&#39;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_currentIteration</span><span class="o">+</span><span class="n">n</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nt</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_finishedReading</span> <span class="o">=</span> <span class="bp">True</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">readIteration</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_currentIteration</span><span class="o">+</span><span class="n">n</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="OpenFOAMReader.readNext"><a class="viewcode-back" href="../foamIO.html#foamIO.OpenFOAMReader.readNext">[docs]</a>	<span class="k">def</span> <span class="nf">readNext</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">skipAndRead</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</div></div>
+<span class="k">def</span> <span class="nf">_writeFoamHeader</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fieldType</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">fieldName</span><span class="p">):</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;/*--------------------------------*- C++ -*----------------------------------*\ </span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;| =========                 |                                                 |</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;| </span><span class="se">\\</span><span class="s">      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;|  </span><span class="se">\\</span><span class="s">    /   O peration     | Version:  2.3.x                                 |</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;|   </span><span class="se">\\</span><span class="s">  /    A nd           | Web:      www.OpenFOAM.org                      |</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;|    </span><span class="se">\\</span><span class="s">/     M anipulation  |                                                 |</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;\*---------------------------------------------------------------------------*/</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;FoamFile</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;{</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;	version     2.0;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;	format      ascii;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;	class       &#39;</span><span class="o">+</span><span class="n">fieldType</span><span class="o">+</span><span class="s">&#39;;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;	location    &quot;&#39;</span><span class="o">+</span><span class="n">location</span><span class="o">+</span><span class="s">&#39;&quot;;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;	object      &#39;</span> <span class="o">+</span> <span class="n">fieldName</span> <span class="o">+</span> <span class="s">&#39;;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;}</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+	
+
+<span class="k">def</span> <span class="nf">_writeVector</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;(&#39;</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">vec</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">vec</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;)&#39;</span><span class="p">)</span>	
+
+<span class="k">def</span> <span class="nf">_writeField</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fieldData</span><span class="p">,</span> <span class="n">fieldType</span><span class="p">):</span>
+	<span class="k">if</span> <span class="n">fieldType</span> <span class="o">==</span> <span class="s">&#39;volScalarField&#39;</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">fieldData</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="c"># Uniform data</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;uniform &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fieldData</span><span class="p">))</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="c"># Non-uniform data</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;nonuniform List&lt;scalar&gt; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fieldData</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">(</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">fieldData</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">fieldData</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;)&#39;</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">fieldData</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+			<span class="c"># Uniform data</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;uniform &#39;</span><span class="p">)</span>
+			<span class="n">_writeVector</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fieldData</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="c"># Non-uniform data</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;nonuniform List&lt;&#39;</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">fieldType</span> <span class="o">==</span> <span class="s">&#39;volVectorField&#39;</span><span class="p">:</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;vector&#39;</span><span class="p">)</span>
+			<span class="k">elif</span> <span class="n">fieldType</span> <span class="o">==</span> <span class="s">&#39;volSymmTensorField&#39;</span><span class="p">:</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;symmTensor&#39;</span><span class="p">)</span>
+			<span class="k">elif</span> <span class="n">fieldType</span> <span class="o">==</span> <span class="s">&#39;volTensorField&#39;</span><span class="p">:</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;tensor&#39;</span><span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Unknown field type &#39;</span> <span class="o">+</span> <span class="n">fieldType</span><span class="p">)</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;&gt; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fieldData</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">(</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">fieldData</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+				<span class="n">_writeVector</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fieldData</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:])</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;)&#39;</span><span class="p">)</span>
+	<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">_DataDimension</span><span class="p">:</span>
+	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dimList</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">dimList</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dimList</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">_DataDimension</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimList</span> <span class="o">+</span> <span class="n">rhs</span><span class="o">.</span><span class="n">dimList</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">__div__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">_DataDimension</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimList</span> <span class="o">-</span> <span class="n">rhs</span><span class="o">.</span><span class="n">dimList</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">__pow__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">_DataDimension</span><span class="p">(</span><span class="n">rhs</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dimList</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="k">return</span> <span class="s">&#39;[{} {} {} {} 0 0 0]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimList</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimList</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimList</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimList</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+
+<span class="n">Dimensionless</span> <span class="o">=</span> <span class="n">_DataDimension</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">DimMass</span> <span class="o">=</span> <span class="n">_DataDimension</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">DimLength</span> <span class="o">=</span> <span class="n">_DataDimension</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">DimTime</span> <span class="o">=</span> <span class="n">_DataDimension</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">DimTemperature</span> <span class="o">=</span> <span class="n">_DataDimension</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">_determineDataType</span><span class="p">(</span><span class="n">fields</span><span class="p">):</span>
+	<span class="n">maxSize</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+	<span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+		<span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">ndim</span><span class="p">):</span>
+			<span class="n">maxSize</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">],</span> <span class="n">maxSize</span><span class="p">[</span><span class="n">axis</span><span class="p">])</span>
+	<span class="k">if</span> <span class="n">maxSize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">maxSize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+			<span class="k">return</span> <span class="s">&#39;volScalarField&#39;</span>
+		<span class="k">if</span> <span class="n">maxSize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+			<span class="k">return</span> <span class="s">&#39;volVectorField&#39;</span>
+		<span class="k">if</span> <span class="n">maxSize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+			<span class="k">return</span> <span class="s">&#39;volSymmTensorField&#39;</span>
+		<span class="k">if</span> <span class="n">maxSize</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span><span class="p">:</span>
+			<span class="k">return</span> <span class="s">&#39;volTensorField&#39;</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">maxSize</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="k">return</span> <span class="s">&#39;volScalarField&#39;</span>
+	<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Unable to determine data type&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="writeFoamData"><a class="viewcode-back" href="../foamIO.html#foamIO.writeFoamData">[docs]</a><span class="k">def</span> <span class="nf">writeFoamData</span><span class="p">(</span><span class="n">caseFolder</span><span class="p">,</span> <span class="n">fieldName</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="n">internalField</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;internalField&#39;</span><span class="p">)</span>
+	<span class="n">boundaryField</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;boundaryField&#39;</span><span class="p">)</span>
+	<span class="n">dimension</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;dimension&#39;</span><span class="p">,</span> <span class="n">Dimensionless</span><span class="p">)</span>
+	<span class="n">time</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+	<span class="n">fieldType</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;fieldType&#39;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">==</span> <span class="n">time</span><span class="p">:</span>
+		<span class="n">timeStr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">))</span> 
+	<span class="k">else</span><span class="p">:</span> 
+		<span class="n">timeStr</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+	<span class="c"># Determine datatype if not provided</span>
+	<span class="k">if</span> <span class="n">fieldType</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+		<span class="n">fieldType</span> <span class="o">=</span> <span class="n">_determineDataType</span><span class="p">([</span><span class="n">internalField</span><span class="p">]</span> <span class="o">+</span> <span class="n">boundaryField</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+	
+	<span class="c"># Verify that all the fields conform to the provided data type</span>
+	<span class="n">fieldTests</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+	<span class="n">fieldTests</span><span class="p">[</span><span class="s">&#39;volTensorField&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">field</span><span class="p">:</span> <span class="p">((</span><span class="n">field</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span><span class="p">)),</span> <span class="s">&#39;(9, ) or (x, 9)&#39;</span><span class="p">]</span>
+	<span class="n">fieldTests</span><span class="p">[</span><span class="s">&#39;volScalarField&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">field</span><span class="p">:</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">field</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">),</span> <span class="s">&#39;() or (x,)&#39;</span><span class="p">]</span>
+	<span class="n">fieldTests</span><span class="p">[</span><span class="s">&#39;volVectorField&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">field</span><span class="p">:</span> <span class="p">((</span><span class="n">field</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)),</span> <span class="s">&#39;(x, 3) or (3,)&#39;</span><span class="p">]</span>
+	<span class="n">fieldTests</span><span class="p">[</span><span class="s">&#39;volSymmTensorField&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">field</span><span class="p">:</span> <span class="p">((</span><span class="n">field</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">6</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">6</span><span class="p">)),</span> <span class="s">&#39;(x, 6) or (6,)&#39;</span><span class="p">]</span>
+
+	<span class="n">fieldTest</span> <span class="o">=</span> <span class="n">fieldTests</span><span class="p">[</span><span class="n">fieldType</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">expectedShape</span> <span class="o">=</span> <span class="n">fieldTests</span><span class="p">[</span><span class="n">fieldType</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+	
+	<span class="k">for</span> <span class="n">field</span><span class="p">,</span> <span class="n">domainName</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">internalField</span><span class="p">]</span> <span class="o">+</span> <span class="n">boundaryField</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[</span><span class="s">&#39;internalField&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">boundaryField</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">fieldTest</span><span class="p">(</span><span class="n">field</span><span class="p">):</span>
+			<span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s">&#39;Invalid &#39;</span> <span class="o">+</span> <span class="n">fieldType</span> <span class="o">+</span><span class="s">&#39; shape &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39; in &#39;</span> <span class="o">+</span> <span class="n">domainName</span> <span class="o">+</span> <span class="s">&#39; (expected &#39;</span> <span class="o">+</span> <span class="n">expectedShape</span> <span class="o">+</span> <span class="s">&#39;)&#39;</span><span class="p">)</span>
+
+	<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">caseFolder</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span><span class="o">+</span><span class="n">timeStr</span><span class="o">+</span><span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">fieldName</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+		<span class="n">_writeFoamHeader</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">fieldType</span><span class="p">,</span> <span class="n">timeStr</span><span class="p">,</span> <span class="n">fieldName</span><span class="p">)</span>
+		<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;dimensions &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">dimension</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+		
+		<span class="c"># Write the internal field</span>
+		<span class="k">if</span> <span class="n">internalField</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;internalField &#39;</span><span class="p">)</span>
+			<span class="n">_writeField</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">internalField</span><span class="p">,</span> <span class="n">fieldType</span><span class="p">)</span>
+
+		<span class="c"># Write boundaries</span>
+		<span class="k">if</span> <span class="n">boundaryField</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;boundaryField</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;{</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+			<span class="k">for</span> <span class="n">boundaryName</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">boundaryField</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;	&#39;</span><span class="o">+</span> <span class="n">boundaryName</span><span class="o">+</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;	{</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;		type fixedValue;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;		value &#39;</span><span class="p">)</span>
+				<span class="n">_writeField</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">fieldType</span><span class="p">)</span>
+				<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;	}</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;}</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">renal_postproc 0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2018, Niclas Berg.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>
