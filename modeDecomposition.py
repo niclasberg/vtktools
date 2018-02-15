@@ -71,8 +71,6 @@ class ModeDecomposer:
 		self.u, self.s, self.v = np.linalg.svd(np.dot(np.diag(self.weights), self.x[:, 0:-1]), full_matrices = False)
 
 	def _computeDMD(self):
-		self._computeSvd()
-
 		# Evaluate inverse of the singular values
 		sigmaInv = np.zeros_like(self.s)
 		sigmaInv[self.s > self.svdTol] = self.s[self.s > self.svdTol]
