@@ -5,6 +5,6 @@
    :maxdepth: 4
 
    foamIO
-   nonUniformStatistics
+   averaging
    vtkio
    vtktools

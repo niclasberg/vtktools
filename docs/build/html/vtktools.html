@@ -49,21 +49,82 @@
 <dl class="class">
 <dt id="vtktools.CellIterator">
 <em class="property">class </em><tt class="descclassname">vtktools.</tt><tt class="descname">CellIterator</tt><big>(</big><em>dataSet</em><big>)</big><a class="headerlink" href="#vtktools.CellIterator" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><dl class="docutils">
+<dt>Iterator for cells in a vtk dataset::</dt>
+<dd><p class="first">dataSet = vtk.vtkPolyData()
+for cell in CellIterator(dataSet):</p>
+<blockquote class="last">
+<div># Do something with the cell</div></blockquote>
+</dd>
+<dt>Args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">dataSet:</th><td class="field-body">non-composite vtk dataset, e.g. vtkPolyData or vtkUnstructuredGrid</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<dl class="method">
 <dt id="vtktools.CellIterator.next">
 <tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#vtktools.CellIterator.next" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Advance the iterator and return the current cell</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="vtktools.PolyLineIterator">
 <em class="property">class </em><tt class="descclassname">vtktools.</tt><tt class="descname">PolyLineIterator</tt><big>(</big><em>cell</em><big>)</big><a class="headerlink" href="#vtktools.PolyLineIterator" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><dl class="docutils">
+<dt>Iterator for point indices in a vtkPolyLine object::</dt>
+<dd><p class="first">polyLine = vtk.vtkPolyLine()
+for pi in PolyLineIterator(pl):</p>
+<blockquote class="last">
+<div>point = polyLine.GetPoint(pi)</div></blockquote>
+</dd>
+<dt>Args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">cell:</th><td class="field-body">Polyline object to iterate over</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+<dl class="method">
 <dt id="vtktools.PolyLineIterator.next">
 <tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#vtktools.PolyLineIterator.next" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Advance the iterator and return the current point index</p>
+</dd></dl>
 
+</dd></dl>
+
+<dl class="function">
+<dt id="vtktools.createVtkCylinder">
+<tt class="descclassname">vtktools.</tt><tt class="descname">createVtkCylinder</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#vtktools.createVtkCylinder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a vtk cylinder
+Keyword arguments:</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">origin (tuple/list/np-array):</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">Origin of the cylinder</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">axis (tuple/list/np-array):</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">Cylinder axis</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">radius (float):</th><td class="field-body">Cylinder radius</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
 </dd></dl>
 
 <dl class="function">
@@ -74,12 +135,69 @@
 <dl class="function">
 <dt id="vtktools.cutPolySurface">
 <tt class="descclassname">vtktools.</tt><tt class="descname">cutPolySurface</tt><big>(</big><em>dataSet</em>, <em>point</em>, <em>normal</em><big>)</big><a class="headerlink" href="#vtktools.cutPolySurface" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Cut a surface with a plane, and return an ordered list
+of points around the circumference of the resulting curve. The cut
+must result in a closed loop, and if the cut produces multiple sub-curves
+the closest one is returned.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">dataSet:</th><td class="field-body">(vtkPolyData): surface dataset</td>
+</tr>
+<tr class="field-even field"><th class="field-name">point:</th><td class="field-body">origin of the cutplane</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">normal:</th><td class="field-body">normal of the cutplane</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Returns:        </dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">np.array:</th><td class="field-body">List of positions around the cicumference of the cut</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Raises:</dt>
+<dd>RuntimeError: If the cut results in a non-closed loop being formed</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
-<dt id="vtktools.renderData">
-<tt class="descclassname">vtktools.</tt><tt class="descname">renderData</tt><big>(</big><em>dataSet</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#vtktools.renderData" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="vtktools.renderDataSet">
+<tt class="descclassname">vtktools.</tt><tt class="descname">renderDataSet</tt><big>(</big><em>dataSet</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#vtktools.renderDataSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Render a vtk dataset</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">dataSet:</th><td class="field-body">vtkUnstructuredGrid or vtkPolyData</td>
+</tr>
+</tbody>
+</table>
+</dd>
+<dt>Keyword args:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">colorBy (str):</th><td class="field-body">constant or scalar</td>
+</tr>
+<tr class="field-even field"><th class="field-name">color (tuple):</th><td class="field-body">rgb value (if colorBy == constant)</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd></dl>
 
 </div>
 

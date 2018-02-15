@@ -42,7 +42,7 @@ class RunningAverage:
 		self.N += 1
 		if self.N == 1:
 			# First added value
-			self.mean = x
+			self.mean = np.copy(x)
 			self.m2 = np.zeros_like(x)
 		else:
 			delta = x - self.mean

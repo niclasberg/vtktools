@@ -89,12 +89,92 @@
 <dl class="function">
 <dt id="vtkio.readDataSet">
 <tt class="descclassname">vtkio.</tt><tt class="descname">readDataSet</tt><big>(</big><em>fileName</em><big>)</big><a class="headerlink" href="#vtkio.readDataSet" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Read the dataset from a file. The reader type used is determined from the file extension.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><table border="1" class="first last docutils">
+<colgroup>
+<col width="35%" />
+<col width="65%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">File ext.</th>
+<th class="head">Return type</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>.vtp</td>
+<td>vtkPolyData</td>
+</tr>
+<tr class="row-odd"><td>.vtu</td>
+<td>vtkUnstructuredGrid</td>
+</tr>
+<tr class="row-even"><td>.vti</td>
+<td>vtkImageData</td>
+</tr>
+<tr class="row-odd"><td>.stl</td>
+<td>vtkPolyData</td>
+</tr>
+<tr class="row-even"><td>.case</td>
+<td>vtkMultiBlockDataSet</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="function">
 <dt id="vtkio.writeDataSet">
 <tt class="descclassname">vtkio.</tt><tt class="descname">writeDataSet</tt><big>(</big><em>dataSet</em>, <em>fileName</em><big>)</big><a class="headerlink" href="#vtkio.writeDataSet" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Write a vtk dataset to a file, the type of writer used is determined from the fileName-extension and the type of the provided dataset.
+The following combinations are currently supported:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="33%" />
+<col width="48%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">File ext.</th>
+<th class="head">Dataset</th>
+<th class="head">File writer</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>.vtp</td>
+<td>vtkPolyData</td>
+<td>vtkXMLPolyDataWriter</td>
+</tr>
+<tr class="row-odd"><td>.vtu</td>
+<td>vtkUnstructuredGrid</td>
+<td>vtkXMLUnstructuredGridWriter</td>
+</tr>
+<tr class="row-even"><td rowspan="3">.vtk</td>
+<td>vtkPolyData</td>
+<td>vtkPolyDataWriter</td>
+</tr>
+<tr class="row-odd"><td>vtkUnstructuredGrid</td>
+<td>vtkUnstructuredGridWriter</td>
+</tr>
+<tr class="row-even"><td>vtkImageData</td>
+<td>vtkImageDataWriter</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Raises:</dt>
+<dd><table class="first last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">RuntimeError:</th><td class="field-body">If the file extension and dataset type provided are not supported (i.e. not in the above table)</td>
+</tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd></dl>
 
 </div>
 

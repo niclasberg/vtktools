@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to renal_postproc's documentation!
+Modules
 ==========================================
 
 FoamIO module:
@@ -17,6 +17,9 @@ VTKtools module:
 
 Averaging module:
 	:mod:`averaging`
+
+ModeDecomposition module:
+	:mod:`modeDecomposition`
 
 .. toctree::
    :maxdepth: 2

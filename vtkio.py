@@ -13,6 +13,27 @@ def _verifyUnstructuredGrid(dataSet):
 		raise RuntimeError('The dataset is not a vtkUnstructuredGrid')
 
 def writeDataSet(dataSet, fileName):
+	'''Write a vtk dataset to a file, the type of writer used is determined from the fileName-extension and the type of the provided dataset.
+	The following combinations are currently supported:
+
+	+------------+---------------------+------------------------------+
+	| File ext.  | Dataset             | File writer                  |
+	+============+=====================+==============================+
+	| .vtp       | vtkPolyData         | vtkXMLPolyDataWriter         |
+	+------------+---------------------+------------------------------+
+	| .vtu       | vtkUnstructuredGrid | vtkXMLUnstructuredGridWriter |
+	+------------+---------------------+------------------------------+
+	|            | vtkPolyData         | vtkPolyDataWriter            |
+	|            +---------------------+------------------------------+   
+	| .vtk       | vtkUnstructuredGrid | vtkUnstructuredGridWriter    |
+	|            +---------------------+------------------------------+
+	|            | vtkImageData        | vtkImageDataWriter           |
+	+------------+---------------------+------------------------------+
+	
+	Raises:
+		:RuntimeError: If the file extension and dataset type provided are not supported (i.e. not in the above table)
+
+	'''
 	filePrefix, fileExtension = os.path.splitext(fileName)
 	if fileExtension == '.vtp':
 		_verifyPolyData(dataSet)
@@ -40,6 +61,24 @@ def writeDataSet(dataSet, fileName):
 	writer.Write()
 
 def readDataSet(fileName):
+	"""Read the dataset from a file. The reader type used is determined from the file extension.
+
+	Returns:
+		+------------+----------------------+
+		| File ext.  | Return type          |
+		+============+======================+
+		| .vtp       | vtkPolyData          |
+		+------------+----------------------+
+		| .vtu       | vtkUnstructuredGrid  |
+		+------------+----------------------+
+		| .vti       | vtkImageData         |
+		+------------+----------------------+
+		| .stl       | vtkPolyData          |
+		+------------+----------------------+
+		| .case      | vtkMultiBlockDataSet |
+		+------------+----------------------+
+
+	"""
 	if not os.path.isfile(fileName):
 		raise RuntimeError('The file', fileName, 'did not exist')
 
@@ -165,11 +204,10 @@ def _printBlockNames(dataSet, ident):
 		currentBlock = it.GetCurrentDataObject()
 		print ident, blockName
 		if it.GetCurrentDataObject().IsA('vtkCompositeDataSet'):
-			d = _printBlockNames(currentBlock, ident+' ')
-			if d != None:
-				return d
+			_printBlockNames(currentBlock, ident+' ')
+
 		it.GoToNextItem()
-	
+	dataSet.UnRegister(it)	# This is needed to prevent memory leaks
 
 def getBlockByName(dataSet, name):
 	if not dataSet.IsA('vtkCompositeDataSet'):
@@ -185,12 +223,15 @@ def _getBlockByName(dataSet, name):
 		blockName = it.GetCurrentMetaData().Get(vtk.vtkCompositeDataSet.NAME())
 		currentBlock = it.GetCurrentDataObject()
 		if blockName.rstrip() == name:
+			dataSet.UnRegister(it)	# This is needed to prevent memory leaks
 			return currentBlock
 		if it.GetCurrentDataObject().IsA('vtkCompositeDataSet'):
 			d = _getBlockByName(currentBlock, name)
 			if d != None:
+				dataSet.UnRegister(it)	# This is needed to prevent memory leaks
 				return d
 		it.GoToNextItem()
+	dataSet.UnRegister(it)	# This is needed to prevent memory leaks
 	return None
 
 def createFolder(directory):

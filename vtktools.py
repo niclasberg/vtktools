@@ -5,6 +5,15 @@ import math
 from vtk.numpy_interface import dataset_adapter as dsa
 
 class PolyLineIterator:
+	'''Iterator for point indices in a vtkPolyLine object::
+		polyLine = vtk.vtkPolyLine()
+		for pi in PolyLineIterator(pl):
+			point = polyLine.GetPoint(pi)
+	
+	Args:
+		:cell: Polyline object to iterate over
+	'''
+
 	def __init__(self, cell):
 		if not cell.IsA('vtkPolyLine'):
 			raise TypeError('Unable to create the cell iterator, only vtkPolyLines supported as cell type')
@@ -16,6 +25,7 @@ class PolyLineIterator:
 		return self
 
 	def next(self):
+		'''Advance the iterator and return the current point index'''
 		if self.i < self.n:
 			i = self.i
 			self.i += 1
@@ -24,6 +34,15 @@ class PolyLineIterator:
 			raise StopIteration()
 
 class CellIterator:
+	'''Iterator for cells in a vtk dataset::
+		dataSet = vtk.vtkPolyData()
+		for cell in CellIterator(dataSet):
+			# Do something with the cell
+	
+	Args:
+		:dataSet: non-composite vtk dataset, e.g. vtkPolyData or vtkUnstructuredGrid
+	'''
+
 	def __init__(self, dataSet):
 		self.i = 0
 		self.n = dataSet.GetNumberOfCells()
@@ -33,6 +52,7 @@ class CellIterator:
 		return self
 	
 	def next(self):
+		'''Advance the iterator and return the current cell'''
 		if self.i < self.n:
 			i = self.i
 			self.i += 1
@@ -50,7 +70,17 @@ def _createMapper(dataSet):
 	mapper.SetInputData(dataSet)
 	return mapper
 
-def renderData(dataSet, **kwargs):
+def renderDataSet(dataSet, **kwargs):
+	""" Render a vtk dataset
+
+	Args:
+		:dataSet: vtkUnstructuredGrid or vtkPolyData
+
+	Keyword args:
+		:colorBy (str): constant or scalar
+		:color (tuple): rgb value (if colorBy == constant)
+	"""
+
 	colorBy = kwargs.get('colorBy', 'constant')
 
 	mapper = _createMapper(dataSet)
@@ -64,7 +94,7 @@ def renderData(dataSet, **kwargs):
 
 	# Coloring
 	if colorBy == 'constant':
-		color = kwarg.get('color', (0.5, 0.5, 0.5))
+		color = kwargs.get('color', (0.5, 0.5, 0.5))
 		mapper.ScalarVisibilityOff()
 		actor.GetProperty().SetColor(color[0], color[1], color[2])
 	elif colorBy == 'scalar':
@@ -111,6 +141,23 @@ def renderData(dataSet, **kwargs):
 	interactor.Start()
 
 def cutPolySurface(dataSet, point, normal):
+	''' Cut a surface with a plane, and return an ordered list
+	of points around the circumference of the resulting curve. The cut
+	must result in a closed loop, and if the cut produces multiple sub-curves
+	the closest one is returned.
+
+	Args:
+		:dataSet: (vtkPolyData): surface dataset
+		:point: origin of the cutplane
+		:normal: normal of the cutplane
+
+	Returns:	
+		:np.array: List of positions around the cicumference of the cut
+
+	Raises:
+		RuntimeError: If the cut results in a non-closed loop being formed
+	'''
+
 	# Generate surface cutcurve
 	plane = vtk.vtkPlane()
 	plane.SetOrigin(point[0], point[1], point[2])
@@ -152,6 +199,41 @@ def cutPolySurface(dataSet, point, normal):
 		raise RuntimeError('The cut curve does not form a closed loop')
 	cutCurve = dsa.WrapDataObject(cutData)
 	return cutCurve.Points[pointIds]
+
+def createVtkCylinder(**kwargs):
+	''' Create a vtk cylinder
+		Keyword arguments:
+			:origin (tuple/list/np-array): Origin of the cylinder
+			:axis (tuple/list/np-array): Cylinder axis
+			:radius (float): Cylinder radius
+	'''
+	origin = np.array(kwargs.get('origin', [0, 0, 0]))
+	axis = np.array(kwargs.get('axis', [0, 0, 1]))
+	radius = np.array(kwargs.get('radius', 1))
+
+	cylinder = vtk.vtkCylinder()
+	cylinder.SetCenter(0, 0, 0)
+	cylinder.SetRadius(radius)
+
+	# The cylinder is (by default) aligned with the y-axis
+	# Rotate the cylinder so that it is aligned with the tangent vector
+	transform = vtk.vtkTransform()
+
+	yDir = np.array([0, 1, 0])
+	# If the tangent is in the y-direction, do nothing
+	if np.abs(1. - np.abs(np.dot(yDir, axis))) > 1e-8:
+		# Create a vector in the normal direction to the plane spanned by yDir and the tangent
+		rotVec = np.cross(yDir, axis)
+		rotVec /= np.linalg.norm(rotVec)
+		
+		# Evaluate rotation angle
+		rotAngle = np.arccos(np.dot(yDir, axis))
+		transform.RotateWXYZ(-180*rotAngle/np.pi, rotVec)
+
+	transform.Translate(-origin)
+	cylinder.SetTransform(transform)
+	
+	return cylinder
 
 def cutPolyData(dataSet, **kwargs):
 	# Read options
