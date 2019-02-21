@@ -185,17 +185,21 @@ def cutPolySurface(dataSet, point, normal):
 	startPtId = locator.FindClosestPoint(point)
 
 	pointIds = [startPtId]
-	while True:
-		# Find the edge that starts at the latest point 
-		pred = (v[1] for v in edges if v[0] == pointIds[-1])
-		currentPtId = pred.next()
+	try:
+		while True:
+			# Find the edge that starts at the latest point 
+			pred = (v[1] for v in edges if v[0] == pointIds[-1])
+			currentPtId = pred.next()
 
-		# Check if we've returned to the start point
-		if currentPtId == startPtId:
-			break
+			# Check if we've returned to the start point
+			if currentPtId == startPtId:
+				break
 
-		pointIds.append(currentPtId)
-	else:	# if no break occured
+			pointIds.append(currentPtId)
+		else:	# if no break occured
+			raise RuntimeError('The cut curve does not form a closed loop')
+	except:
+		# We reached the end of the edge graph without getting back to the beginning
 		raise RuntimeError('The cut curve does not form a closed loop')
 	cutCurve = dsa.WrapDataObject(cutData)
 	return cutCurve.Points[pointIds]
@@ -270,3 +274,25 @@ def cutPolyData(dataSet, **kwargs):
 		clipper.InsideOutOn()
 		clipper.Update()
 		return clipper.GetOutput()
+
+def createLineCells(Nx, Ny):
+	pass
+
+def createQuadCells(Nx, Ny, wrapAround=True):
+	cells = vtk.vtkCellArray()
+	for i in range(1, Nx):
+		for j in range(0, Ny):
+			quad = vtk.vtkQuad()
+			if j == 0:
+				if wrapAround:
+					quad.GetPointIds().SetId(0, i*Ny)
+					quad.GetPointIds().SetId(1, (i+1)*Ny-1)
+					quad.GetPointIds().SetId(2, i*Ny-1)
+					quad.GetPointIds().SetId(3, (i-1)*Ny)
+			else:
+				quad.GetPointIds().SetId(0, i*Ny+j)
+				quad.GetPointIds().SetId(1, i*Ny+j-1)
+				quad.GetPointIds().SetId(2, (i-1)*Ny + j-1)
+				quad.GetPointIds().SetId(3, (i-1)*Ny + j)
+			cells.InsertNextCell(quad)
+	return cells

@@ -51,16 +51,22 @@ class OpenFOAMReader:
 
 		# Read options
 		for k,v in kwargs.items():
-			print k, ' => ', v
+			#print k, ' => ', v
 			if k == 'cellArrays':		
 				self.reader.DisableAllCellArrays()
 				if v:
 					for cellArray in v:
 						self.reader.SetCellArrayStatus(cellArray, 1)
 			elif k == 'patchArrays':
+				patches = self.getPatchNames()
 				self.reader.DisableAllPatchArrays()
 				if v:
 					for patchArray in v:
+						if not patchArray in patches:
+							print 'Available patches'
+							for patch in patches:
+								print ' ' + patch
+							raise RuntimeError("Unknown patch name " +patchArray)
 						self.reader.SetPatchArrayStatus(patchArray, 1)
 			elif k == 'pointArrays':
 				self.reader.DisableAllPointArrays()
@@ -379,8 +385,9 @@ def writeFoamData(caseFolder, fieldName, **kwargs):
 	expectedShape = fieldTests[fieldType][1]
 	
 	for field, domainName in zip([internalField] + boundaryField.values(), ['internalField'] + boundaryField.keys()):
-		if not fieldTest(field):
-			raise RuntimeError('Invalid ' + fieldType +' shape ' + str(field.shape) + ' in ' + domainName + ' (expected ' + expectedShape + ')')
+		if not isinstance(field, basestring):
+			if not fieldTest(field):
+				raise RuntimeError('Invalid ' + fieldType +' shape ' + str(field.shape) + ' in ' + domainName + ' (expected ' + expectedShape + ')')
 
 	with open(caseFolder + '/'+timeStr+'/' + fieldName, 'w') as f:
 		_writeFoamHeader(f, fieldType, timeStr, fieldName)
@@ -398,8 +405,11 @@ def writeFoamData(caseFolder, fieldName, **kwargs):
 			for boundaryName, data in boundaryField.iteritems():
 				f.write('	'+ boundaryName+'\n')
 				f.write('	{\n')
-				f.write('		type fixedValue;\n')
-				f.write('		value ')
-				_writeField(f, data, fieldType)
+				if isinstance(data, basestring):
+					f.write('		type ' + data + ';\n')
+				else:
+					f.write('		type fixedValue;\n')
+					f.write('		value ')
+					_writeField(f, data, fieldType)
 				f.write('	}\n')
 			f.write('}\n')

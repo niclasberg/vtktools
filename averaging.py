@@ -60,20 +60,21 @@ class RunningAverage:
 			self.addValue(xs)	# Only one value, default to the addValue method
 		else:
 			# General case. Compute the mean and 2nd moment of the supplied values
-			xMean = np.mean(xs, axis=0)
-			xM2 = N * np.var(xs, axis=0)
-	
-			if self.N == 0:		
-				# No values have previously been added, just set the mean and the 
-				# 2nd moment to those of the supplied values
-				self.mean = xMean
-				self.m2 = xM2
-			else:
-				# Merge the statistics for the two sets (Chan et al.)
-				# See the wiki page on "algorithms for calculating variance" for more details
-				self.m2 += xM2 + (xMean - self.mean)**2 * (self.N * N) / (self.N + N)
-				self.mean = (self.N*self.mean + N*xMean) / (self.N + N)
-			self.N += N
+			self.addValuesByMeanAndVariance(np.mean(xs, axis=0), np.var(xs, axis=0), N)
+
+	def addValuesByMeanAndVariance(self, xMean, varVal, N):
+		xM2 = varVal * N
+		if self.N == 0:		
+			# No values have previously been added, just set the mean and the 
+			# 2nd moment to those of the supplied values
+			self.mean = xMean
+			self.m2 = xM2
+		else:
+			# Merge the statistics for the two sets (Chan et al.)
+			# See the wiki page on "algorithms for calculating variance" for more details
+			self.m2 += xM2 + (xMean - self.mean)**2 * (self.N * N) / (self.N + N)
+			self.mean = (self.N*self.mean + N*xMean) / (self.N + N)
+		self.N += N
 
 	def getMean(self):
 		if self.N < 1:
@@ -83,13 +84,13 @@ class RunningAverage:
 	def getVariance(self):
 		if self.N < 2:
 			raise ValueError('At least two samples needed for variance')
-		return self.m2 / (self.N - 1)
+		return self.m2 / self.N
 
 	def getStd(self):
-		return np.sqrt(self.getVariance())
+		return np.sqrt(self.N * self.getVariance() / (self.N-1.))
 
 	def getRms(self):
-		return np.sqrt((self.N-1.)*self.getVariance() / self.N)
+		return np.sqrt(self.getVariance())
 
 # Test the averaging
 def _test():
