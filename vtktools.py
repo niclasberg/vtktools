@@ -296,3 +296,17 @@ def createQuadCells(Nx, Ny, wrapAround=True):
 				quad.GetPointIds().SetId(3, (i-1)*Ny + j)
 			cells.InsertNextCell(quad)
 	return cells
+
+def computeCellVolumes(dataSet):
+	vols = np.zeros(dataSet.GetNumberOfCells())
+	for i, cell in enumerate(CellIterator(dataSet)):
+		if cell.GetCellDimension() != 3:
+			vols[i] = 0
+		else:
+			ptIds = vtk.vtkIdList()
+			pts = vtk.vtkPoints()
+			if cell.Triangulate(0, ptIds, pts) != 1:
+				raise RuntimeError("Unable to triangulate the cell")
+			for j in range(0, ptIds.GetNumberOfIds() // 4):
+				vols[i] += vtk.vtkTetra.ComputeVolume(pts.GetPoint(4*j), pts.GetPoint(4*j+1), pts.GetPoint(4*j+2), pts.GetPoint(4*j+3))
+	return vols
