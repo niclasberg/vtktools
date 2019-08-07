@@ -32,21 +32,21 @@ DimLength = _DataDimension([0, 1, 0, 0])
 DimTime = _DataDimension([0, 0, 1, 0])
 DimTemperature = _DataDimension([0, 0, 0, 1])
 
+class FoamFileVersion:
+    def __init__(self, major, minor):
+        self.major = major
+        self.minor = minor
+
+    @staticmethod
+    def fromString(versionString):
+        parts = versionString.split('.')
+        self.major = int(parts[0])
+        self.minor = int(parts[1])
+
+    def __str__(self):
+        return str(self.major) + '.' + str(self.minor)
+
 class FoamFileInformation:
-    class FoamFileVersion:
-        def __init__(self, major, minor):
-            self.major = major
-            self.minor = minor
-        
-        @staticmethod
-        def fromString(versionString):
-            parts = versionString.split('.')
-            self.major = int(parts[0])
-            self.minor = int(parts[1])
-
-        def __str__(self):
-            return str(self.major) + '.' + str(self.minor)
-
     def __init__(self, **kwargs):
         if not 'version' in kwargs:
             self.version = FoamFileVersion(2, 0)
@@ -492,7 +492,7 @@ def writeFoamData(caseFolder, fieldName, **kwargs):
                 raise RuntimeError('Invalid ' + fieldType +' shape ' + str(field.shape) + ' in ' + domainName + ' (expected ' + expectedShape + ')')
 
     with open(caseFolder + '/'+timeStr+'/' + fieldName, 'w') as f:
-        _writeFoamFileHeader(f, FoamFileInformation(version=2.0, format='ascii', className = fieldType, location = location, object = fieldName))
+        _writeFoamFileHeader(f, FoamFileInformation(format='ascii', className = fieldType, location = timeStr, object = fieldName))
         f.write('dimensions ' + str(dimension) + ';\n')
         
         # Write the internal field
