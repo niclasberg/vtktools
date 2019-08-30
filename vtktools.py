@@ -140,6 +140,17 @@ def renderDataSet(dataSet, **kwargs):
 	#interactor.Render()
 	interactor.Start()
 
+def cutDataSet(dataSet, point, normal):
+	plane = vtk.vtkPlane()
+	plane.SetOrigin(point[0], point[1], point[2])
+	plane.SetNormal(normal[0], normal[1], normal[2])
+	
+	cutter = vtk.vtkCutter()
+	cutter.SetInputData(dataSet)
+	cutter.SetCutFunction(plane)
+	cutter.Update()
+	return cutter.GetOutput()
+
 def cutPolySurface(dataSet, point, normal):
 	''' Cut a surface with a plane, and return an ordered list
 	of points around the circumference of the resulting curve. The cut
@@ -159,17 +170,8 @@ def cutPolySurface(dataSet, point, normal):
 	'''
 
 	# Generate surface cutcurve
-	plane = vtk.vtkPlane()
-	plane.SetOrigin(point[0], point[1], point[2])
-	plane.SetNormal(normal[0], normal[1], normal[2])
+	cutData = cutDataSet(dataSet, point, normal)
 	
-	cutter = vtk.vtkCutter()
-	cutter.SetInputData(dataSet)
-	cutter.SetCutFunction(plane)
-	cutter.Update()
-
-	# Get cut line edges
-	cutData = cutter.GetOutput()
 	edges = []
 	cutLines = cutData.GetLines()
 	cutLines.InitTraversal()
@@ -278,11 +280,29 @@ def cutPolyData(dataSet, **kwargs):
 def createLineCells(Nx, Ny):
 	pass
 
-def createQuadCells(Nx, Ny, wrapAround=True):
+def createQuadCells(Nx, Ny, **kwargs):
+	''' Create quad cells corresponding to a Nx x Ny grid. 
+	Parameters:
+		:Nx (int): Number of points in the first dimension
+		:Ny (int): Number of points in the second dimension
+	Keyword arguments:
+		:cutsectionIsClosed (bool or [bool]): Flag to indicate whether to wrap around the indices
+		This is useful for creating a cell distribution for a cylinder
+		Can also be an array of bools each indicating whether each of the sections in the x-direction should be wrapped 
+	'''
 	cells = vtk.vtkCellArray()
+	cutsectionIsClosed = kwargs.get('cutsectionIsClosed', True)
+
 	for i in range(1, Nx):
+		if isinstance(cutsectionIsClosed, bool):
+			wrapAround = cutsectionIsClosed
+		else:
+			# Assume array like
+			wrapAround = cutsectionIsClosed[i] and cutsectionIsClosed[i-1]
+
 		for j in range(0, Ny):
 			quad = vtk.vtkQuad()
+
 			if j == 0:
 				if wrapAround:
 					quad.GetPointIds().SetId(0, i*Ny)
@@ -295,6 +315,41 @@ def createQuadCells(Nx, Ny, wrapAround=True):
 				quad.GetPointIds().SetId(2, (i-1)*Ny + j-1)
 				quad.GetPointIds().SetId(3, (i-1)*Ny + j)
 			cells.InsertNextCell(quad)
+	return cells
+
+def createLineCells(Nx, Ny, **kwargs):
+	''' Create lines corresponding to a Nx x Ny grid. 
+	Parameters:
+		:Nx (int): Number of points in the first dimension
+		:Ny (int): Number of points in the second dimension
+	Keyword arguments:
+		:cutsectionIsClosed (bool or [bool]): Flag to indicate whether to wrap around the indices
+		This is useful for creating a cell distribution for a cylinder
+		Can also be an array of bools each indicating whether each of the sections in the x-direction should be wrapped 
+	'''
+	cells = vtk.vtkCellArray()
+	cutsectionIsClosed = kwargs.get('cutsectionIsClosed', True)
+
+	for i in range(Nx):
+		if isinstance(cutsectionIsClosed, bool):
+			wrapAround = cutsectionIsClosed
+		else:
+			# Assume array like
+			wrapAround = cutsectionIsClosed[i] and cutsectionIsClosed[i-1]
+
+		cell = vtk.vtkPolyLine()
+		startId = i*Ny
+
+		if wrapAround:
+			cell.GetPointIds().SetNumberOfIds(Ny+1)
+			cell.GetPointIds().SetId(Ny, startId)
+		else:
+			cell.GetPointIds().SetNumberOfIds(Ny)
+
+		for j in range(Ny):
+			cell.GetPointIds().SetId(j, startId+j)
+
+		cells.InsertNextCell(cell)
 	return cells
 
 def computeCellVolumes(dataSet):
@@ -310,3 +365,23 @@ def computeCellVolumes(dataSet):
 			for j in range(0, ptIds.GetNumberOfIds() // 4):
 				vols[i] += vtk.vtkTetra.ComputeVolume(pts.GetPoint(4*j), pts.GetPoint(4*j+1), pts.GetPoint(4*j+2), pts.GetPoint(4*j+3))
 	return vols
+
+def computeCellCenters(dataSet):
+	pCoords = [0, 0, 0]
+	x = [0, 0, 0]
+	subId = vtk.mutable(0)
+	weights = []
+	cellCenters = np.zeros((dataSet.GetNumberOfCells(), 3))
+	for i in range(dataSet.GetNumberOfCells()):
+		cell = dataSet.GetCell(i)
+
+		# Get parametric coordinates for the cell center
+		cell.GetParametricCenter(pCoords)
+
+		if len(weights) < cell.GetNumberOfPoints():
+			weights = [0 for j in range(cell.GetNumberOfPoints())]
+
+		cell.EvaluateLocation(subId, pCoords, x, weights)
+		
+		cellCenters[i, :] = x
+	return cellCenters
