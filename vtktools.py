@@ -277,8 +277,13 @@ def cutPolyData(dataSet, **kwargs):
 		clipper.Update()
 		return clipper.GetOutput()
 
-def createLineCells(Nx, Ny):
-	pass
+def clearCellData(dataSet):
+	for i in reversed(range(dataSet.GetCellData().GetNumberOfArrays())):
+		dataSet.GetCellData().RemoveArray(i)
+
+def clearPointData(dataSet):
+	for i in reversed(range(dataSet.GetPointData().GetNumberOfArrays())):
+		dataSet.GetPointData().RemoveArray(i)
 
 def createQuadCells(Nx, Ny, **kwargs):
 	''' Create quad cells corresponding to a Nx x Ny grid. 

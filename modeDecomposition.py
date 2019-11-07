@@ -5,7 +5,7 @@ class ModeDecomposer:
 	class PODMode:
 		def __init__(self, parent, modeId):
 			self.id = modeId
-			self.mode = np.dot(np.diag(parent.invWeights), parent.u[:, modeId])
+			self.mode = parent.invWeights * parent.u[:, modeId]
 			self.amplitude = parent.s[modeId]
 			self.timeCoeffs = self.amplitude * parent.v[modeId, :]
 
@@ -16,7 +16,7 @@ class ModeDecomposer:
 		def __init__(self, parent, modeId):
 			self.id = modeId
 			eigvec = parent.S_eigvecs[:, modeId]
-			self.mode = np.dot(np.dot(np.diag(parent.invWeights), parent.u[:, :eigvec.shape[0]]), eigvec)
+			self.mode = np.dot(parent.invWeights[:, np.newaxis] * parent.u[:, :eigvec.shape[0]], eigvec)
 			self.eigenvalue = parent.S_eigvals[modeId]
 			self.growthRate = np.log(np.abs(self.eigenvalue))
 			self.frequency = np.arctan2(np.imag(self.eigenvalue), np.real(self.eigenvalue))
@@ -68,16 +68,20 @@ class ModeDecomposer:
 		self._computeDMD()
 
 	def _computeSvd(self):
-		self.u, self.s, self.v = np.linalg.svd(np.dot(np.diag(self.weights), self.x[:, 0:-1]), full_matrices = False)
+		self.u, self.s, self.v = np.linalg.svd(self.weights[:, np.newaxis] * self.x[:, 0:-1], full_matrices = False)
 
 	def _computeDMD(self):
 		# Evaluate inverse of the singular values
-		sigmaInv = np.zeros_like(self.s)
-		sigmaInv[self.s > self.svdTol] = self.s[self.s > self.svdTol]
+		sigmaInv = 1. / self.s[self.s > self.svdTol]
 		nSV = sigmaInv.size	# Number of non-zeros singular values
 
 		# Evaluate pseudo-companion matrix
-		S = np.dot(np.dot(np.dot(np.dot(self.u[:, :nSV].conj().T, np.diag(self.weights)), self.x[:, 1:]), self.v[:nSV, :].conj().T), np.diag(sigmaInv))
+		S = np.dot( \
+				np.dot( \
+					(self.weights[:, np.newaxis] * self.u[:, :nSV]).conj().T, \
+					self.x[:, 1:]), \
+				self.v[:nSV, :].conj().T) \
+			* sigmaInv[np.newaxis, :]
 
 		# Compute eigenvalues
 		eigvals, eigvecs = np.linalg.eig(S)
@@ -96,11 +100,22 @@ class ModeDecomposer:
 			raise RuntimeError('The decomposition has not been computed, run compute() before accessing the mode data')
 
 	def hasComputed(self):
-		return not self.x is None
+		return not self.u is None
+
+	def getPODTimeCoeffs(self, maxModeId=-1):
+		if maxModeId == 1:
+			return self.s[:, np.newaxis] * self.v
+		else:
+			return np.row_stack((
+				self.s[:maxModeId, np.newaxis] * self.v[:maxModeId, :],
+				[np.sum(self.s[maxModeId:, np.newaxis] * self.v[maxModeId:, :], axis=0)]))
 
 	def getDMDMode(self, modeId):
 		self.assertComputed()
 		return ModeDecomposer.DMDMode(self, modeId)
+
+	def getDMDEigenvalues(self):
+		return self.S_eigvals
 
 	def reconstructFromPOD(self, numberOfModes):
 		self.assertComputed()
