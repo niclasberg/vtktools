@@ -1,10 +1,15 @@
+from __future__ import division
+from builtins import next
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import numpy as np
 import vtk
 import vtk.numpy_interface
 import math
 from vtk.numpy_interface import dataset_adapter as dsa
 
-class PolyLineIterator:
+class PolyLineIterator(object):
 	'''Iterator for point indices in a vtkPolyLine object::
 		polyLine = vtk.vtkPolyLine()
 		for pi in PolyLineIterator(pl):
@@ -24,7 +29,7 @@ class PolyLineIterator:
 	def __iter__(self):
 		return self
 
-	def next(self):
+	def __next__(self):
 		'''Advance the iterator and return the current point index'''
 		if self.i < self.n:
 			i = self.i
@@ -33,7 +38,7 @@ class PolyLineIterator:
 		else:
 			raise StopIteration()
 
-class CellIterator:
+class CellIterator(object):
 	'''Iterator for cells in a vtk dataset::
 		dataSet = vtk.vtkPolyData()
 		for cell in CellIterator(dataSet):
@@ -51,7 +56,7 @@ class CellIterator:
 	def __iter__(self):
 		return self
 	
-	def next(self):
+	def __next__(self):
 		'''Advance the iterator and return the current cell'''
 		if self.i < self.n:
 			i = self.i
@@ -234,7 +239,7 @@ def createVtkCylinder(**kwargs):
 		
 		# Evaluate rotation angle
 		rotAngle = np.arccos(np.dot(yDir, axis))
-		transform.RotateWXYZ(-180*rotAngle/np.pi, rotVec)
+		transform.RotateWXYZ(old_div(-180*rotAngle,np.pi), rotVec)
 
 	transform.Translate(-origin)
 	cylinder.SetTransform(transform)
@@ -278,11 +283,11 @@ def cutPolyData(dataSet, **kwargs):
 		return clipper.GetOutput()
 
 def clearCellData(dataSet):
-	for i in reversed(range(dataSet.GetCellData().GetNumberOfArrays())):
+	for i in reversed(list(range(dataSet.GetCellData().GetNumberOfArrays()))):
 		dataSet.GetCellData().RemoveArray(i)
 
 def clearPointData(dataSet):
-	for i in reversed(range(dataSet.GetPointData().GetNumberOfArrays())):
+	for i in reversed(list(range(dataSet.GetPointData().GetNumberOfArrays()))):
 		dataSet.GetPointData().RemoveArray(i)
 
 def createQuadCells(Nx, Ny, **kwargs):
