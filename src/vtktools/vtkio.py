@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import vtk
 import vtk.numpy_interface
@@ -248,7 +249,7 @@ def _printBlockNames(dataSet, ident):
 	while not it.IsDoneWithTraversal():
 		blockName = it.GetCurrentMetaData().Get(vtk.vtkCompositeDataSet.NAME())
 		currentBlock = it.GetCurrentDataObject()
-		print ident, blockName
+		print(ident, blockName)
 		if it.GetCurrentDataObject().IsA('vtkCompositeDataSet'):
 			_printBlockNames(currentBlock, ident+' ')
 

@@ -3,6 +3,7 @@ Provides a wrapper for the OpenFOAM-reader in VTK, giving
 a more intuitive interface to iterate over the timeseries. 
 A helper function for writing OpenFOAM-data is also provided.
 '''
+from __future__ import print_function
 
 import numpy as np
 import vtk
@@ -185,9 +186,9 @@ class OpenFOAMReader:
                 if v:
                     for patchArray in v:
                         if not patchArray in patches:
-                            print 'Available patches'
+                            print('Available patches')
                             for patch in patches:
-                                print ' ' + patch
+                                print(' ' + patch)
                             raise RuntimeError("Unknown patch name " +patchArray)
                         self.reader.SetPatchArrayStatus(patchArray, 1)
             elif k == 'pointArrays':

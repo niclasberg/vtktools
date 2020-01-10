@@ -191,7 +191,7 @@ def cutPolySurface(dataSet, point, normal):
 		while True:
 			# Find the edge that starts at the latest point 
 			pred = (v[1] for v in edges if v[0] == pointIds[-1])
-			currentPtId = pred.next()
+			currentPtId = next(pred)
 
 			# Check if we've returned to the start point
 			if currentPtId == startPtId:

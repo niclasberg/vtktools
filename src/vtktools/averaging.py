@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 
 class NonUniformStatistics:
@@ -110,9 +111,9 @@ def _test():
 	av1.addValues(x[:splitInd])
 	av1.addValues(x[splitInd:])
 	
-	print 'Mean: np =', xMean, 'running =', av0.getMean(), 'running (chunked) =', av1.getMean()
-	print 'RMS: np =', xRms, 'running =', av0.getRms(), 'running (chunked) =', av1.getRms()
-	print 'Std: np =', np.sqrt(float(Nsamples)/(Nsamples-1.))*xRms, 'running =', av0.getStd(), 'running (chunked) =', av1.getStd()
+	print('Mean: np =', xMean, 'running =', av0.getMean(), 'running (chunked) =', av1.getMean())
+	print('RMS: np =', xRms, 'running =', av0.getRms(), 'running (chunked) =', av1.getRms())
+	print('Std: np =', np.sqrt(float(Nsamples)/(Nsamples-1.))*xRms, 'running =', av0.getStd(), 'running (chunked) =', av1.getStd())
 
 if __name__ == '__main__':
 	_test()

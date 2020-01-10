@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -159,7 +160,7 @@ if __name__ == '__main__':
 
 	fig, axes = plt.subplots(3, 1)
 
-	print np.sum(np.abs(data[:, :-1] - (modeAnalyzer.getPODMode(0).reconstruct() + modeAnalyzer.getPODMode(1).reconstruct())))
+	print(np.sum(np.abs(data[:, :-1] - (modeAnalyzer.getPODMode(0).reconstruct() + modeAnalyzer.getPODMode(1).reconstruct()))))
 
 	for i in range(0, 5):
 		axes[0].plot(x, modeAnalyzer.getPODMode(i).mode, label='Mode {:d}'.format(i))
