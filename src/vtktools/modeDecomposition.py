@@ -1,8 +1,11 @@
+from __future__ import print_function
+from builtins import range
+from builtins import object
 import numpy as np
 import matplotlib.pyplot as plt
 
-class ModeDecomposer:
-	class PODMode:
+class ModeDecomposer(object):
+	class PODMode(object):
 		def __init__(self, parent, modeId):
 			self.id = modeId
 			self.mode = parent.invWeights * parent.u[:, modeId]
@@ -12,7 +15,7 @@ class ModeDecomposer:
 		def reconstruct(self):
 			return np.outer(self.mode, self.timeCoeffs)
 
-	class DMDMode:
+	class DMDMode(object):
 		def __init__(self, parent, modeId):
 			self.id = modeId
 			eigvec = parent.S_eigvecs[:, modeId]
@@ -159,7 +162,7 @@ if __name__ == '__main__':
 
 	fig, axes = plt.subplots(3, 1)
 
-	print np.sum(np.abs(data[:, :-1] - (modeAnalyzer.getPODMode(0).reconstruct() + modeAnalyzer.getPODMode(1).reconstruct())))
+	print(np.sum(np.abs(data[:, :-1] - (modeAnalyzer.getPODMode(0).reconstruct() + modeAnalyzer.getPODMode(1).reconstruct()))))
 
 	for i in range(0, 5):
 		axes[0].plot(x, modeAnalyzer.getPODMode(i).mode, label='Mode {:d}'.format(i))

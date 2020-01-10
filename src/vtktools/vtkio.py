@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import str
+from builtins import range
 import numpy as np
 import vtk
 import vtk.numpy_interface
@@ -118,7 +121,7 @@ def readDataSet(fileName, **kwargs):
 		reader = vtk.vtkDataSetReader()
 	elif fileExtension == '.case':
 		reader = vtk.vtkEnSightGoldBinaryReader()
-		for k,v in kwargs.items():
+		for k,v in list(kwargs.items()):
 			if k == 'disableCellArrays':
 				for arrName in v:
 					reader.GetCellDataArraySelection().DisableArray(arrName)
@@ -248,7 +251,7 @@ def _printBlockNames(dataSet, ident):
 	while not it.IsDoneWithTraversal():
 		blockName = it.GetCurrentMetaData().Get(vtk.vtkCompositeDataSet.NAME())
 		currentBlock = it.GetCurrentDataObject()
-		print ident, blockName
+		print(ident, blockName)
 		if it.GetCurrentDataObject().IsA('vtkCompositeDataSet'):
 			_printBlockNames(currentBlock, ident+' ')
 

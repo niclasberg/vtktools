@@ -3,14 +3,20 @@ Provides a wrapper for the OpenFOAM-reader in VTK, giving
 a more intuitive interface to iterate over the timeseries. 
 A helper function for writing OpenFOAM-data is also provided.
 '''
+from __future__ import print_function
 
+from builtins import zip
+from builtins import str
+from builtins import range
+from past.builtins import basestring
+from builtins import object
 import numpy as np
 import vtk
 import re
 import os
 
 # Abstraction for OpenFOAM dimensions
-class _DataDimension:
+class _DataDimension(object):
     def __init__(self, dimList):
         self.dimList = np.array(dimList)
 
@@ -32,7 +38,7 @@ DimLength = _DataDimension([0, 1, 0, 0])
 DimTime = _DataDimension([0, 0, 1, 0])
 DimTemperature = _DataDimension([0, 0, 0, 1])
 
-class FoamFileVersion:
+class FoamFileVersion(object):
     def __init__(self, major, minor):
         self.major = major
         self.minor = minor
@@ -46,7 +52,7 @@ class FoamFileVersion:
     def __str__(self):
         return str(self.major) + '.' + str(self.minor)
 
-class FoamFileInformation:
+class FoamFileInformation(object):
     def __init__(self, **kwargs):
         if not 'version' in kwargs:
             self.version = FoamFileVersion(2, 0)
@@ -125,7 +131,7 @@ def readFoamDict(fileName):
     scanner.scan(text)
     return root    
 
-class OpenFOAMReader:
+class OpenFOAMReader(object):
     """Convenience wrapper around vtkOpenFOAMReader.
     Allows all reader options to be set in the constructor,
     and simplifies iteration over a timeseries.
@@ -172,7 +178,7 @@ class OpenFOAMReader:
         self.__timeDict = None # Lazy evaluation
 
         # Read options
-        for k,v in kwargs.items():
+        for k,v in list(kwargs.items()):
             #print k, ' => ', v
             if k == 'cellArrays':
                 self.reader.DisableAllCellArrays()
@@ -185,9 +191,9 @@ class OpenFOAMReader:
                 if v:
                     for patchArray in v:
                         if not patchArray in patches:
-                            print 'Available patches'
+                            print('Available patches')
                             for patch in patches:
-                                print ' ' + patch
+                                print(' ' + patch)
                             raise RuntimeError("Unknown patch name " +patchArray)
                         self.reader.SetPatchArrayStatus(patchArray, 1)
             elif k == 'pointArrays':
@@ -474,7 +480,7 @@ def writeFoamData(caseFolder, fieldName, **kwargs):
 
     # Determine datatype if not provided
     if fieldType == None:
-        fieldType = _determineDataType([internalField] + boundaryField.values())
+        fieldType = _determineDataType([internalField] + list(boundaryField.values()))
     
     # Verify that all the fields conform to the provided data type
     fieldTests = dict()
@@ -486,7 +492,7 @@ def writeFoamData(caseFolder, fieldName, **kwargs):
     fieldTest = fieldTests[fieldType][0]
     expectedShape = fieldTests[fieldType][1]
     
-    for field, domainName in zip([internalField] + boundaryField.values(), ['internalField'] + boundaryField.keys()):
+    for field, domainName in zip([internalField] + list(boundaryField.values()), ['internalField'] + list(boundaryField.keys())):
         if not isinstance(field, basestring):
             if not fieldTest(field):
                 raise RuntimeError('Invalid ' + fieldType +' shape ' + str(field.shape) + ' in ' + domainName + ' (expected ' + expectedShape + ')')
@@ -504,7 +510,7 @@ def writeFoamData(caseFolder, fieldName, **kwargs):
         if boundaryField != None:
             f.write('boundaryField\n')
             f.write('{\n')
-            for boundaryName, data in boundaryField.iteritems():
+            for boundaryName, data in boundaryField.items():
                 f.write('	'+ boundaryName+'\n')
                 f.write('	{\n')
                 if isinstance(data, basestring):

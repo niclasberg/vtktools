@@ -1,6 +1,10 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import object
+from past.utils import old_div
 import numpy as np
 
-class NonUniformStatistics:
+class NonUniformStatistics(object):
 	def __init__(self, arrayShape):
 		self.oldMean = np.zeros(arrayShape)
 		self.newMean = np.zeros(arrayShape)
@@ -15,7 +19,7 @@ class NonUniformStatistics:
 			self.newMean[indx] = value
 		else:
 			self.oldMean[indx] = self.newMean[indx]
-			self.newMean[indx] += (value - self.oldMean[indx]) / self.sampleCount[indx]
+			self.newMean[indx] += old_div((value - self.oldMean[indx]), self.sampleCount[indx])
 			self.std[indx] += (value - self.oldMean[indx]) * (value - self.newMean[indx])
 		self.max[indx] = max(self.max[indx], value)
 
@@ -25,13 +29,13 @@ class NonUniformStatistics:
 	def getStd(self):
 		ret = np.zeros_like(self.std)
 		inds = self.sampleCount >= 2
-		ret[inds] = np.sqrt(self.std[inds] / (self.sampleCount[inds] - 1))
+		ret[inds] = np.sqrt(old_div(self.std[inds], (self.sampleCount[inds] - 1)))
 		return ret
 
 	def getMax(self):
 		return self.max
 
-class RunningAverage:
+class RunningAverage(object):
 	def __init__(self):
 		self.mean = None
 		self.m2 = None
@@ -72,8 +76,8 @@ class RunningAverage:
 		else:
 			# Merge the statistics for the two sets (Chan et al.)
 			# See the wiki page on "algorithms for calculating variance" for more details
-			self.m2 += xM2 + (xMean - self.mean)**2 * (self.N * N) / (self.N + N)
-			self.mean = (self.N*self.mean + N*xMean) / (self.N + N)
+			self.m2 += xM2 + old_div((xMean - self.mean)**2 * (self.N * N), (self.N + N))
+			self.mean = old_div((self.N*self.mean + N*xMean), (self.N + N))
 		self.N += N
 
 	def getMean(self):
@@ -84,10 +88,10 @@ class RunningAverage:
 	def getVariance(self):
 		if self.N < 2:
 			raise ValueError('At least two samples needed for variance')
-		return self.m2 / self.N
+		return old_div(self.m2, self.N)
 
 	def getStd(self):
-		return np.sqrt(self.N * self.getVariance() / (self.N-1.))
+		return np.sqrt(old_div(self.N * self.getVariance(), (self.N-1.)))
 
 	def getRms(self):
 		return np.sqrt(self.getVariance())
@@ -110,9 +114,9 @@ def _test():
 	av1.addValues(x[:splitInd])
 	av1.addValues(x[splitInd:])
 	
-	print 'Mean: np =', xMean, 'running =', av0.getMean(), 'running (chunked) =', av1.getMean()
-	print 'RMS: np =', xRms, 'running =', av0.getRms(), 'running (chunked) =', av1.getRms()
-	print 'Std: np =', np.sqrt(float(Nsamples)/(Nsamples-1.))*xRms, 'running =', av0.getStd(), 'running (chunked) =', av1.getStd()
+	print('Mean: np =', xMean, 'running =', av0.getMean(), 'running (chunked) =', av1.getMean())
+	print('RMS: np =', xRms, 'running =', av0.getRms(), 'running (chunked) =', av1.getRms())
+	print('Std: np =', np.sqrt(float(Nsamples)/(Nsamples-1.))*xRms, 'running =', av0.getStd(), 'running (chunked) =', av1.getStd())
 
 if __name__ == '__main__':
 	_test()
